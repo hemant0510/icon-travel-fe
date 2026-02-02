@@ -26,7 +26,7 @@ export default async function Home() {
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-10">
         <header className="flex flex-col gap-3">
           <h1 className="text-3xl font-semibold text-zinc-900 sm:text-4xl">
-             Flight Booking Platform
+             Icon Fly Booking Platform
           </h1>
           <p className="max-w-2xl text-sm text-zinc-600 sm:text-base">
             Choose a route, submit the search, and see fresh results once the API responds.
