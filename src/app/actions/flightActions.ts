@@ -1,6 +1,8 @@
 "use server";
 
-import { FlightService } from "@/services/flightService";
+import FlightService from "@/services/flightService";
+import { FlightSearchRequest } from "@/models/requests/FlightSearchRequest";
+import { mapAmadeusToUnified } from "@/lib/mappers";
 import type { FlightSearchParams, UnifiedFlight } from "@/types/flight";
 
 export type FlightSearchState = {
@@ -8,8 +10,6 @@ export type FlightSearchState = {
   flights: UnifiedFlight[];
   error?: string;
 };
-
-const service = new FlightService();
 
 export async function searchFlightsAction(
   _previousState: FlightSearchState,
@@ -39,8 +39,49 @@ export async function searchFlightsAction(
     max: Number.isFinite(maxValue) && maxValue > 0 ? maxValue : 25,
   };
 
+  /* 
+   * Construct FlightSearchRequest from formData
+   * Note: This assumes simplified one-way logic for the MVP mapping.
+   * Round-trip would require two OriginDestinations.
+   */
+  const request: FlightSearchRequest = {
+    originDestinations: [
+      {
+        id: "1",
+        originLocationCode: origin,
+        destinationLocationCode: destination,
+        departureDateTimeRange: {
+          date: departureDate
+        }
+      }
+    ],
+    travelers: [
+      { id: "1", travelerType: "ADULT" } // Defaulting traveler for now
+    ],
+    sources: ["GDS"]
+  };
+
+  if (returnDate) {
+    request.originDestinations.push({
+      id: "2",
+      originLocationCode: destination,
+      destinationLocationCode: origin,
+      departureDateTimeRange: {
+        date: returnDate
+      }
+    });
+  }
+
+  // Adults handling - typically added to travelers array
+  if (adultsValue > 1) {
+    for (let i = 2; i <= adultsValue; i++) {
+      request.travelers.push({ id: i.toString(), travelerType: "ADULT" });
+    }
+  }
+
   try {
-    const flights = await service.searchFlights(searchParams);
+    const response = await FlightService.searchFlights(request);
+    const flights = mapAmadeusToUnified(response);
     return { status: "success", flights };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Search failed.";
