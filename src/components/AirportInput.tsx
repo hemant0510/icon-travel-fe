@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { Airport } from "@/types/flight";
+import { MapPin } from "lucide-react";
 
 const INDIAN_AIRPORTS: Airport[] = [
   { iataCode: "DEL", city: "New Delhi", name: "Indira Gandhi International", country: "IN" },
@@ -108,7 +109,7 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
   return (
     <div
       ref={wrapperRef}
-      className="relative flex flex-col gap-2"
+      className="relative flex flex-col gap-1.5"
       onBlur={(event) => {
         const nextTarget = event.relatedTarget as Node | null;
         if (!wrapperRef.current?.contains(nextTarget)) {
@@ -116,13 +117,14 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
         }
       }}
     >
-      <label className="text-sm font-medium text-zinc-700" htmlFor={name}>
+      <label className="text-xs font-medium text-text-secondary" htmlFor={name}>
+        <MapPin size={13} className="mr-1 inline-block" />
         {label}
       </label>
       <input
         id={name}
         name={name}
-        className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+        className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
         value={displayValue}
         onChange={(event) => onChange(event.target.value.toUpperCase())}
         onFocus={() => setIsFocused(true)}
@@ -130,30 +132,31 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
         required
       />
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute top-full z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
+        <div className="glass-card absolute top-full z-20 mt-2 w-full overflow-hidden p-1 shadow-lg">
           {suggestions.map((airport) => (
             <button
               key={airport.iataCode}
               type="button"
-              className="flex w-full flex-col gap-1 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+              className="flex w-full cursor-pointer flex-col gap-0.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-50"
               onMouseDown={(event) => {
                 event.preventDefault();
                 onChange(airport.iataCode);
                 setIsFocused(false);
               }}
             >
-              <span className="font-semibold">
-                {airport.city ?? airport.name ?? "Airport"} ({airport.iataCode})
+              <span className="font-semibold text-text-primary">
+                {airport.city ?? airport.name ?? "Airport"}{" "}
+                <span className="text-primary-600">({airport.iataCode})</span>
               </span>
-              <span className="text-xs text-zinc-500">
-                {airport.name ?? "Airport"} • {airport.country ?? "Unknown"}
+              <span className="text-xs text-text-muted">
+                {airport.name ?? "Airport"} &bull; {airport.country ?? "Unknown"}
               </span>
             </button>
           ))}
         </div>
       )}
       {showEmpty && (
-        <div className="absolute top-full z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-500 shadow-lg">
+        <div className="glass-card absolute top-full z-20 mt-2 w-full px-3 py-2.5 text-xs text-text-muted shadow-lg">
           No airports found.
         </div>
       )}

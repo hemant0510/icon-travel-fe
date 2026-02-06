@@ -1,5 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +15,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#1a56db",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
-  title: "Flight Booking System",
-  description: "Scalable flight booking experience powered by Next.js architecture",
+  title: "Icon Fly - Flights, Hotels & Cabs",
+  description:
+    "Book flights, hotels, and cabs at the best prices with Icon Fly. Your trusted travel partner.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Icon Fly",
+  },
 };
 
 export default function RootLayout({
@@ -27,8 +42,28 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Navbar />
+        <main className="min-h-screen">{children}</main>
+        <Footer />
+        <MobileBottomNav />
+        <ServiceWorkerRegistration />
       </body>
     </html>
+  );
+}
+
+function ServiceWorkerRegistration() {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+          }
+        `,
+      }}
+    />
   );
 }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a56db"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <text x="256" y="210" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="150" font-weight="700" fill="#ffffff">IF</text>
+  <path d="M136 320 L256 280 L376 320" stroke="#f97316" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <circle cx="256" cy="280" r="10" fill="#f97316"/>
+</svg>

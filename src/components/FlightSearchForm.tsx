@@ -6,6 +6,7 @@ import AirportInput from "./AirportInput";
 import type { FlightSearchParams } from "@/types/flight";
 import { searchFlightsAction, type FlightSearchState } from "@/app/actions/flightActions";
 import { defaultFilters, useFlightStore } from "@/store/useFlightStore";
+import { Search, Calendar, Users, ListOrdered } from "lucide-react";
 
 type FlightSearchFormProps = {
   initialState: FlightSearchState;
@@ -41,81 +42,88 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
       <form
         ref={formRef}
         action={formAction}
-        className="grid gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+        className="glass-card p-5 sm:p-6"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <AirportInput label="Origin" name="origin" value={origin} onChange={setOrigin} />
-          <AirportInput
-            label="Destination"
-            name="destination"
-            value={destination}
-            onChange={setDestination}
-          />
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <AirportInput label="Origin" name="origin" value={origin} onChange={setOrigin} />
+            <AirportInput
+              label="Destination"
+              name="destination"
+              value={destination}
+              onChange={setDestination}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-secondary" htmlFor="departureDate">
+                <Calendar size={13} className="mr-1 inline-block" />
+                Departure Date
+              </label>
+              <input
+                id="departureDate"
+                name="departureDate"
+                type="date"
+                className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+                defaultValue={initialParams.departureDate}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-secondary" htmlFor="returnDate">
+                <Calendar size={13} className="mr-1 inline-block" />
+                Return Date
+              </label>
+              <input
+                id="returnDate"
+                name="returnDate"
+                type="date"
+                className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+                defaultValue={initialParams.returnDate ?? ""}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-secondary" htmlFor="adults">
+                <Users size={13} className="mr-1 inline-block" />
+                Travelers
+              </label>
+              <input
+                id="adults"
+                name="adults"
+                type="number"
+                min={1}
+                max={9}
+                className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+                defaultValue={initialParams.adults}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-secondary" htmlFor="max">
+                <ListOrdered size={13} className="mr-1 inline-block" />
+                Max Results
+              </label>
+              <input
+                id="max"
+                name="max"
+                type="number"
+                min={1}
+                max={250}
+                className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+                defaultValue={initialParams.max ?? 25}
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={!canSubmit || isPending}
+            className="gradient-primary flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Search size={16} />
+            {isPending ? "Searching..." : "Search Flights"}
+          </button>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="departureDate">
-              Departure Date
-            </label>
-            <input
-              id="departureDate"
-              name="departureDate"
-              type="date"
-              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-              defaultValue={initialParams.departureDate}
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="returnDate">
-              Return Date
-            </label>
-            <input
-              id="returnDate"
-              name="returnDate"
-              type="date"
-              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-              defaultValue={initialParams.returnDate ?? ""}
-            />
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="adults">
-              Travelers
-            </label>
-            <input
-              id="adults"
-              name="adults"
-              type="number"
-              min={1}
-              max={9}
-              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-              defaultValue={initialParams.adults}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="max">
-              Max Results
-            </label>
-            <input
-              id="max"
-              name="max"
-              type="number"
-              min={1}
-              max={250}
-              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-              defaultValue={initialParams.max ?? 25}
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          disabled={!canSubmit || isPending}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-        >
-          Search Flights
-        </button>
       </form>
 
       <FlightResults
