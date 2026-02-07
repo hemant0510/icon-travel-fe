@@ -50,7 +50,7 @@ export async function searchFlightsAction(
         id: "1",
         originLocationCode: origin,
         destinationLocationCode: destination,
-        departureDateTimeRange: {
+        departureDateTime: {
           date: departureDate
         }
       }
@@ -66,7 +66,7 @@ export async function searchFlightsAction(
       id: "2",
       originLocationCode: destination,
       destinationLocationCode: origin,
-      departureDateTimeRange: {
+      departureDateTime: {
         date: returnDate
       }
     });

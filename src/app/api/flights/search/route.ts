@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         id: "1",
         originLocationCode: payload.origin,
         destinationLocationCode: payload.destination,
-        departureDateTimeRange: {
+        departureDateTime: {
           date: payload.departureDate
         }
       }
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       id: "2",
       originLocationCode: payload.destination,
       destinationLocationCode: payload.origin,
-      departureDateTimeRange: {
+      departureDateTime: {
         date: payload.returnDate
       }
     });

@@ -9,10 +9,10 @@ export interface OriginDestination {
     id: string;
     originLocationCode: string;
     destinationLocationCode: string;
-    departureDateTimeRange: DateRange;
+    departureDateTime: DateTimeRange;
 }
 
-export interface DateRange {
+export interface DateTimeRange {
     date: string;
     time?: string;
 }

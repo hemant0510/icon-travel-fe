@@ -20,9 +20,7 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
   const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState<LocationData | null>(null);
 
-  const displayValue = selected
-    ? `${selected.address.cityName}, ${selected.address.countryName}`
-    : query;
+  const displayValue = selected ? selected.iataCode : query;
 
   const fetchLocations = useCallback(async (keyword: string) => {
     if (keyword.length < 3) {
@@ -58,7 +56,7 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
 
   const handleSelect = (location: LocationData) => {
     setSelected(location);
-    setQuery(`${location.address.cityName}, ${location.address.countryName}`);
+    setQuery(location.iataCode);
     onChange(location.iataCode);
     setSuggestions([]);
     setIsFocused(false);
