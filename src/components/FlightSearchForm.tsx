@@ -3,15 +3,21 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import FlightResults from "./FlightResults";
 import AirportInput from "./AirportInput";
-import type { FlightSearchParams } from "@/types/flight";
+import type { FlightSearchParams, TripType } from "@/types/flight";
 import { searchFlightsAction, type FlightSearchState } from "@/app/actions/flightActions";
 import { defaultFilters, useFlightStore } from "@/store/useFlightStore";
-import { Search, Calendar, Users, ListOrdered } from "lucide-react";
+import { Search, Calendar, Users, ListOrdered, Coins } from "lucide-react";
 
 type FlightSearchFormProps = {
   initialState: FlightSearchState;
   initialParams: FlightSearchParams;
 };
+
+const CURRENCIES = [
+  { code: "INR", label: "INR (\u20B9)" },
+  { code: "EUR", label: "EUR (\u20AC)" },
+  { code: "GBP", label: "GBP (\u00A3)" },
+] as const;
 
 export default function FlightSearchForm({ initialState, initialParams }: FlightSearchFormProps) {
   const [state, formAction, isPending] = useActionState(searchFlightsAction, initialState);
@@ -19,6 +25,8 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
   const formRef = useRef<HTMLFormElement | null>(null);
   const [origin, setOrigin] = useState(initialParams.origin);
   const [destination, setDestination] = useState(initialParams.destination);
+  const [tripType, setTripType] = useState<TripType>(initialParams.tripType ?? "one-way");
+  const [currencyCode, setCurrencyCode] = useState(initialParams.currencyCode ?? "INR");
 
   const canSubmit = useMemo(() => {
     return origin.trim().length === 3 && destination.trim().length === 3 && origin !== destination;
@@ -45,6 +53,36 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
         className="glass-card p-5 sm:p-6"
       >
         <div className="flex flex-col gap-4">
+          {/* Hidden fields for tripType and currencyCode */}
+          <input type="hidden" name="tripType" value={tripType} />
+          <input type="hidden" name="currencyCode" value={currencyCode} />
+
+          {/* Trip Type Toggle */}
+          <div className="flex items-center gap-1 rounded-xl bg-primary-50 p-1">
+            <button
+              type="button"
+              onClick={() => setTripType("one-way")}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                tripType === "one-way"
+                  ? "bg-white text-primary-700 shadow-sm"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              One Way
+            </button>
+            <button
+              type="button"
+              onClick={() => setTripType("round-trip")}
+              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                tripType === "round-trip"
+                  ? "bg-white text-primary-700 shadow-sm"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              Round Trip
+            </button>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <AirportInput label="Origin" name="origin" value={origin} onChange={setOrigin} />
             <AirportInput
@@ -58,7 +96,7 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary" htmlFor="departureDate">
                 <Calendar size={13} className="mr-1 inline-block" />
-                Departure Date
+                Departure Date <span className="text-red-500">*</span>
               </label>
               <input
                 id="departureDate"
@@ -72,18 +110,27 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary" htmlFor="returnDate">
                 <Calendar size={13} className="mr-1 inline-block" />
-                Return Date
+                Return Date {tripType === "round-trip" && <span className="text-red-500">*</span>}
               </label>
               <input
                 id="returnDate"
                 name="returnDate"
                 type="date"
-                className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+                className={`glass-input px-4 py-2.5 text-sm focus:glass-input-focus ${
+                  tripType === "one-way"
+                    ? "cursor-not-allowed bg-zinc-50 text-text-muted opacity-60"
+                    : "text-text-primary"
+                }`}
                 defaultValue={initialParams.returnDate ?? ""}
+                disabled={tripType === "one-way"}
+                required={tripType === "round-trip"}
               />
+              {tripType === "one-way" && (
+                <p className="text-xs text-text-muted">Not applicable for one-way trips</p>
+              )}
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary" htmlFor="adults">
                 <Users size={13} className="mr-1 inline-block" />
@@ -113,6 +160,24 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
                 className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
                 defaultValue={initialParams.max ?? 25}
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-secondary" htmlFor="currencySelect">
+                <Coins size={13} className="mr-1 inline-block" />
+                Currency
+              </label>
+              <select
+                id="currencySelect"
+                className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+                value={currencyCode}
+                onChange={(e) => setCurrencyCode(e.target.value)}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <button

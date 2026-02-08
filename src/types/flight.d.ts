@@ -45,6 +45,8 @@ export interface UnifiedFlight {
   segments: FlightSegment[];
 }
 
+export type TripType = "one-way" | "round-trip";
+
 export interface FlightSearchParams {
   origin: string;
   destination: string;
@@ -52,6 +54,8 @@ export interface FlightSearchParams {
   returnDate?: string;
   adults: number;
   max?: number;
+  tripType?: TripType;
+  currencyCode?: string;
 }
 
 export interface BookingRequest {

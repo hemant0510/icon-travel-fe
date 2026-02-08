@@ -1,15 +1,28 @@
-import { FlightAvailabilityResponse, FlightOffer, Segment } from '../models/responses/FlightSearchResponse';
-import { UnifiedFlight, FlightSegment } from '../types/flight';
+import type { FlightOffersResponse, FlightOfferData, OfferSegment } from '../models/responses/FlightSearchResponse';
+import type { UnifiedFlight, FlightSegment } from '../types/flight';
 
-export function mapAmadeusToUnified(response: FlightAvailabilityResponse): UnifiedFlight[] {
+export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFlight[] {
     if (!response?.data) return [];
 
-    return response.data.map((offer: FlightOffer) => {
-        const segments = offer.segments;
+    const carriers = response.dictionaries?.carriers ?? {};
+    const locations = response.dictionaries?.locations ?? {};
+
+    return response.data.map((offer: FlightOfferData) => {
+        const firstItinerary = offer.itineraries[0];
+        const segments = firstItinerary?.segments ?? [];
         const firstSegment = segments[0];
         const lastSegment = segments[segments.length - 1];
 
-        const mappedSegments: FlightSegment[] = segments.map((seg: Segment) => ({
+        const carrierCode =
+            offer.validatingAirlineCodes?.[0] ??
+            firstSegment?.carrierCode;
+
+        const originCode = firstSegment?.departure.iataCode ?? "";
+        const destCode = lastSegment?.arrival.iataCode ?? "";
+        const originLoc = locations[originCode];
+        const destLoc = locations[destCode];
+
+        const mappedSegments: FlightSegment[] = segments.map((seg: OfferSegment) => ({
             departure: {
                 iataCode: seg.departure.iataCode,
                 at: seg.departure.at
@@ -20,23 +33,27 @@ export function mapAmadeusToUnified(response: FlightAvailabilityResponse): Unifi
             },
             carrierCode: seg.carrierCode,
             number: seg.number,
-            duration: undefined, // API structure for segment duration wasn't in the example
+            duration: seg.duration,
             stops: seg.numberOfStops
         }));
 
         return {
             id: offer.id,
-            priceTotal: "N/A", // Availability API doesn't return price
-            currency: "N/A",
-            carrierCode: firstSegment.carrierCode,
-            carrierName: firstSegment.carrierCode, // Placeholder
+            priceTotal: offer.price?.total ?? "N/A",
+            currency: offer.price?.currency ?? "INR",
+            carrierCode,
+            carrierName: carrierCode ? (carriers[carrierCode] ?? carrierCode) : undefined,
             origin: {
-                iataCode: firstSegment.departure.iataCode
+                iataCode: originCode,
+                city: originLoc?.cityCode,
+                country: originLoc?.countryCode,
             },
             destination: {
-                iataCode: lastSegment.arrival.iataCode
+                iataCode: destCode,
+                city: destLoc?.cityCode,
+                country: destLoc?.countryCode,
             },
-            duration: offer.duration,
+            duration: firstItinerary?.duration,
             segments: mappedSegments
         };
     });

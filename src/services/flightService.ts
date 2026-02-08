@@ -1,6 +1,5 @@
 import AuthService from '@/services/authService';
-import { FlightSearchRequest } from '../models/requests/FlightSearchRequest';
-import { FlightAvailabilityResponse } from '../models/responses/FlightSearchResponse';
+import type { FlightOffersResponse } from '../models/responses/FlightSearchResponse';
 
 class FlightService {
   private static instance: FlightService;
@@ -14,7 +13,15 @@ class FlightService {
     return FlightService.instance;
   }
 
-  public async searchFlights(request: FlightSearchRequest): Promise<FlightAvailabilityResponse> {
+  public async searchFlights(params: {
+    origin: string;
+    destination: string;
+    departureDate: string;
+    returnDate?: string;
+    adults: number;
+    max?: number;
+    currencyCode?: string;
+  }): Promise<FlightOffersResponse> {
     try {
       const token = await AuthService.getToken();
       const baseUrl = process.env.VITE_AMADEUS_BASE_URL;
@@ -23,16 +30,29 @@ class FlightService {
         throw new Error('Missing Amadeus API base URL');
       }
 
-      const url = `${baseUrl}/shopping/availability/flight-availabilities`;
+      // Use v2 Flight Offers Search GET API (returns pricing)
+      // Base URL is https://test.api.amadeus.com/v1 — strip /v1 and use /v2
+      const apiBase = baseUrl.replace(/\/v1\/?$/, '');
+      const url = new URL(`${apiBase}/v2/shopping/flight-offers`);
+      url.searchParams.append('originLocationCode', params.origin);
+      url.searchParams.append('destinationLocationCode', params.destination);
+      url.searchParams.append('departureDate', params.departureDate);
+      if (params.returnDate) {
+        url.searchParams.append('returnDate', params.returnDate);
+      }
+      url.searchParams.append('adults', String(params.adults));
+      if (params.max) {
+        url.searchParams.append('max', String(params.max));
+      }
+      if (params.currencyCode) {
+        url.searchParams.append('currencyCode', params.currencyCode);
+      }
 
-      const response = await fetch(url, {
-        method: 'POST',
+      const response = await fetch(url.toString(), {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'X-HTTP-Method-Override': 'GET',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(request)
+        }
       });
 
       if (!response.ok) {
@@ -40,7 +60,7 @@ class FlightService {
         throw new Error(`Flight search failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const data: FlightAvailabilityResponse = await response.json();
+      const data: FlightOffersResponse = await response.json();
       return data;
 
     } catch (error) {

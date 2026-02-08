@@ -83,11 +83,17 @@ export default function FlightFilters() {
 
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Currency</p>
-        <input
-          className="glass-input px-3 py-2 text-sm text-text-primary"
+        <select
+          className="glass-input px-3 py-2 text-sm text-text-primary focus:glass-input-focus"
           value={preferences.currency}
-          readOnly
-        />
+          onChange={(event) =>
+            setPreferences({ ...preferences, currency: event.target.value })
+          }
+        >
+          <option value="INR">INR (\u20B9)</option>
+          <option value="EUR">EUR (\u20AC)</option>
+          <option value="GBP">GBP (\u00A3)</option>
+        </select>
       </div>
     </div>
   );
