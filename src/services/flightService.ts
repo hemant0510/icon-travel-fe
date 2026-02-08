@@ -24,7 +24,7 @@ class FlightService {
   }): Promise<FlightOffersResponse> {
     try {
       const token = await AuthService.getToken();
-      const baseUrl = process.env.VITE_AMADEUS_BASE_URL;
+      const baseUrl = process.env.AMADEUS_BASE_URL;
 
       if (!baseUrl) {
         throw new Error('Missing Amadeus API base URL');
@@ -65,6 +65,49 @@ class FlightService {
 
     } catch (error) {
       console.error('Error searching flights:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed pricing for a specific flight offer.
+   * Calls Amadeus v1/shopping/flight-offers/pricing (POST with X-HTTP-Method-Override: GET).
+   */
+  public async getFlightPrice(flightOffer: Record<string, unknown>): Promise<Record<string, unknown>> {
+    try {
+      const token = await AuthService.getToken();
+      const baseUrl = process.env.AMADEUS_BASE_URL;
+
+      if (!baseUrl) {
+        throw new Error('Missing Amadeus API base URL');
+      }
+
+      const apiBase = baseUrl.replace(/\/v1\/?$/, '');
+      const url = `${apiBase}/v1/shopping/flight-offers/pricing`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-HTTP-Method-Override': 'GET',
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'flight-offers-pricing',
+            flightOffers: [flightOffer],
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Flight pricing failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting flight price:', error);
       throw error;
     }
   }

@@ -16,7 +16,7 @@ class LocationService {
     public async searchCity(keyword: string): Promise<LocationSearchResponse> {
         try {
             const token = await AuthService.getToken();
-            const baseUrl = process.env.VITE_AMADEUS_BASE_URL;
+            const baseUrl = process.env.AMADEUS_BASE_URL;
 
             if (!baseUrl) {
                 throw new Error('Missing Amadeus API base URL');

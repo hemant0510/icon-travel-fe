@@ -1,5 +1,22 @@
 import type { FlightOffersResponse, FlightOfferData, OfferSegment } from '../models/responses/FlightSearchResponse';
-import type { UnifiedFlight, FlightSegment } from '../types/flight';
+import type { UnifiedFlight, FlightSegment, FlightItinerary } from '../types/flight';
+
+function mapSegments(segments: OfferSegment[]): FlightSegment[] {
+    return segments.map((seg) => ({
+        departure: {
+            iataCode: seg.departure.iataCode,
+            at: seg.departure.at
+        },
+        arrival: {
+            iataCode: seg.arrival.iataCode,
+            at: seg.arrival.at
+        },
+        carrierCode: seg.carrierCode,
+        number: seg.number,
+        duration: seg.duration,
+        stops: seg.numberOfStops
+    }));
+}
 
 export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFlight[] {
     if (!response?.data) return [];
@@ -9,9 +26,9 @@ export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFligh
 
     return response.data.map((offer: FlightOfferData) => {
         const firstItinerary = offer.itineraries[0];
-        const segments = firstItinerary?.segments ?? [];
-        const firstSegment = segments[0];
-        const lastSegment = segments[segments.length - 1];
+        const firstSegments = firstItinerary?.segments ?? [];
+        const firstSegment = firstSegments[0];
+        const lastSegment = firstSegments[firstSegments.length - 1];
 
         const carrierCode =
             offer.validatingAirlineCodes?.[0] ??
@@ -22,19 +39,10 @@ export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFligh
         const originLoc = locations[originCode];
         const destLoc = locations[destCode];
 
-        const mappedSegments: FlightSegment[] = segments.map((seg: OfferSegment) => ({
-            departure: {
-                iataCode: seg.departure.iataCode,
-                at: seg.departure.at
-            },
-            arrival: {
-                iataCode: seg.arrival.iataCode,
-                at: seg.arrival.at
-            },
-            carrierCode: seg.carrierCode,
-            number: seg.number,
-            duration: seg.duration,
-            stops: seg.numberOfStops
+        // Map all itineraries (outbound + return for round-trip)
+        const itineraries: FlightItinerary[] = offer.itineraries.map((itin) => ({
+            duration: itin.duration,
+            segments: mapSegments(itin.segments),
         }));
 
         return {
@@ -54,7 +62,9 @@ export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFligh
                 country: destLoc?.countryCode,
             },
             duration: firstItinerary?.duration,
-            segments: mappedSegments
+            segments: itineraries[0]?.segments ?? [],
+            itineraries,
+            rawOffer: offer as unknown as Record<string, unknown>,
         };
     });
 }

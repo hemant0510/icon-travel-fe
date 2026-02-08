@@ -105,7 +105,7 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="glass-card absolute top-full z-20 mt-2 max-h-72 w-full overflow-y-auto p-1 shadow-lg scrollbar-thin">
+        <div className="absolute top-full z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-border bg-white p-1 shadow-lg scrollbar-thin">
           {isLoading && (
             <div className="flex items-center justify-center py-3 text-xs text-text-muted">
               <Loader2 size={14} className="mr-2 animate-spin" />
@@ -142,7 +142,7 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
       )}
 
       {showEmpty && (
-        <div className="glass-card absolute top-full z-20 mt-2 w-full px-3 py-2.5 text-xs text-text-muted shadow-lg">
+        <div className="absolute top-full z-20 mt-2 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-xs text-text-muted shadow-lg">
           No airports found.
         </div>
       )}

@@ -40,9 +40,9 @@ class AuthService {
     }
 
     private async fetchToken(): Promise<string> {
-        const clientId = process.env.VITE_AMADEUS_CLIENT_ID;
-        const clientSecret = process.env.VITE_AMADEUS_CLIENT_SECRET;
-        const baseUrl = process.env.VITE_AMADEUS_BASE_URL;
+        const clientId = process.env.AMADEUS_CLIENT_ID;
+        const clientSecret = process.env.AMADEUS_CLIENT_SECRET;
+        const baseUrl = process.env.AMADEUS_BASE_URL;
 
         if (!clientId || !clientSecret || !baseUrl) {
             throw new Error('Missing Amadeus API credentials in environment variables');

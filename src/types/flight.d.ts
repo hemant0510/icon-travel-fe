@@ -33,6 +33,11 @@ export interface FlightOffer {
   validatingAirlineCodes?: string[];
 }
 
+export interface FlightItinerary {
+  duration?: string;
+  segments: FlightSegment[];
+}
+
 export interface UnifiedFlight {
   id: string;
   priceTotal: string;
@@ -43,6 +48,9 @@ export interface UnifiedFlight {
   destination: Airport;
   duration?: string;
   segments: FlightSegment[];
+  itineraries: FlightItinerary[];
+  /** Raw Amadeus offer data — needed for Flight Offers Price API call */
+  rawOffer?: Record<string, unknown>;
 }
 
 export type TripType = "one-way" | "round-trip";
