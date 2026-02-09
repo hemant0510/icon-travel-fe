@@ -19,23 +19,32 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState<LocationData | null>(null);
+  const [fetchError, setFetchError] = useState(false);
 
   const displayValue = selected ? selected.iataCode : query;
 
   const fetchLocations = useCallback(async (keyword: string) => {
     if (keyword.length < 3) {
       setSuggestions([]);
+      setFetchError(false);
       return;
     }
 
     setIsLoading(true);
+    setFetchError(false);
     try {
       const res = await fetch(
         `/api/locations/search?keyword=${encodeURIComponent(keyword)}`
       );
+      if (!res.ok) {
+        setFetchError(true);
+        setSuggestions([]);
+        return;
+      }
       const json = await res.json();
       setSuggestions(json.data ?? []);
     } catch {
+      setFetchError(true);
       setSuggestions([]);
     } finally {
       setIsLoading(false);
@@ -70,7 +79,7 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
 
   const isOpen = isFocused && (suggestions.length > 0 || isLoading);
   const showEmpty =
-    isFocused && query.length >= 3 && !isLoading && suggestions.length === 0 && !selected;
+    isFocused && query.length >= 3 && !isLoading && !fetchError && suggestions.length === 0 && !selected;
 
   return (
     <div
@@ -144,6 +153,12 @@ export default function AirportInput({ label, name, value, onChange }: AirportIn
       {showEmpty && (
         <div className="absolute top-full z-20 mt-2 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-xs text-text-muted shadow-lg">
           No airports found.
+        </div>
+      )}
+
+      {isFocused && fetchError && !isLoading && (
+        <div className="absolute top-full z-20 mt-2 w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-600 shadow-lg">
+          Unable to search airports. Please check your connection.
         </div>
       )}
     </div>
