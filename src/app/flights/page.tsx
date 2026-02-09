@@ -1,25 +1,33 @@
 import FlightFilters from "@/components/FlightFilters";
 import FlightSearchForm from "@/components/FlightSearchForm";
 import type { FlightSearchState } from "@/app/actions/flightActions";
-import type { FlightSearchParams } from "@/types/flight";
+import type { FlightSearchParams, TripType } from "@/types/flight";
 import { Plane } from "lucide-react";
 
-const defaultSearchParams = (): FlightSearchParams => {
-  const today = new Date();
-  const departure = new Date(today);
-  departure.setDate(today.getDate() + 7);
-
-  return {
-    origin: "DEL",
-    destination: "BOM",
-    departureDate: departure.toISOString().slice(0, 10),
-    adults: 1,
-    max: 12,
-  };
+type FlightsPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function FlightsPage() {
-  const searchParams = defaultSearchParams();
+export default async function FlightsPage({ searchParams }: FlightsPageProps) {
+  const query = await searchParams;
+
+  const today = new Date();
+  const defaultDeparture = new Date(today);
+  defaultDeparture.setDate(today.getDate() + 7);
+
+  const initialParams: FlightSearchParams = {
+    origin: typeof query.origin === "string" ? query.origin.toUpperCase() : "",
+    destination: typeof query.destination === "string" ? query.destination.toUpperCase() : "",
+    departureDate: typeof query.departureDate === "string" ? query.departureDate : defaultDeparture.toISOString().slice(0, 10),
+    returnDate: typeof query.returnDate === "string" ? query.returnDate : undefined,
+    adults: typeof query.adults === "string" ? Math.max(1, Number(query.adults) || 1) : 1,
+    max: 25,
+    tripType: (query.tripType === "round-trip" ? "round-trip" : "one-way") as TripType,
+    currencyCode: typeof query.currencyCode === "string" ? query.currencyCode : "INR",
+  };
+
+  // Auto-search if origin and destination are provided from home page
+  const hasSearchParams = initialParams.origin.length === 3 && initialParams.destination.length === 3;
   const initialState: FlightSearchState = { status: "idle", flights: [] };
 
   return (
@@ -53,7 +61,8 @@ export default function FlightsPage() {
           </aside>
           <FlightSearchForm
             initialState={initialState}
-            initialParams={searchParams}
+            initialParams={initialParams}
+            autoSearch={hasSearchParams}
           />
         </div>
       </div>

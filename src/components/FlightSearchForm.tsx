@@ -11,6 +11,7 @@ import { Search, Calendar, Users, ListOrdered, Coins } from "lucide-react";
 type FlightSearchFormProps = {
   initialState: FlightSearchState;
   initialParams: FlightSearchParams;
+  autoSearch?: boolean;
 };
 
 const CURRENCIES = [
@@ -19,10 +20,11 @@ const CURRENCIES = [
   { code: "GBP", label: "GBP (\u00A3)" },
 ] as const;
 
-export default function FlightSearchForm({ initialState, initialParams }: FlightSearchFormProps) {
+export default function FlightSearchForm({ initialState, initialParams, autoSearch }: FlightSearchFormProps) {
   const [state, formAction, isPending] = useActionState(searchFlightsAction, initialState);
   const { addSearch, setFilters } = useFlightStore();
   const formRef = useRef<HTMLFormElement | null>(null);
+  const autoSearchedRef = useRef(false);
   const [origin, setOrigin] = useState(initialParams.origin);
   const [destination, setDestination] = useState(initialParams.destination);
   const [tripType, setTripType] = useState<TripType>(initialParams.tripType ?? "one-way");
@@ -31,6 +33,14 @@ export default function FlightSearchForm({ initialState, initialParams }: Flight
   const canSubmit = useMemo(() => {
     return origin.trim().length === 3 && destination.trim().length === 3 && origin !== destination;
   }, [origin, destination]);
+
+  // Auto-submit when navigated from home page with search params
+  useEffect(() => {
+    if (autoSearch && !autoSearchedRef.current && formRef.current && canSubmit) {
+      autoSearchedRef.current = true;
+      formRef.current.requestSubmit();
+    }
+  }, [autoSearch, canSubmit]);
 
   useEffect(() => {
     if (state.status === "success") {
