@@ -19,6 +19,7 @@ export const viewport: Viewport = {
   themeColor: "#1a56db",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -27,8 +28,11 @@ export const metadata: Metadata = {
     "Book flights, hotels, and cabs at the best prices with Icon Fly. Your trusted travel partner.",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Icon Fly",
+  },
+  icons: {
+    apple: "/icons/icon-192.svg",
   },
 };
 

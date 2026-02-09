@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { UnifiedFlight } from "@/types/flight";
 import { useFlightStore } from "@/store/useFlightStore";
 import FlightSkeleton from "./FlightSkeleton";
 import FlightCard from "./FlightCard";
-import { Plane, AlertCircle, Search } from "lucide-react";
+import { Plane, AlertCircle, Search, ArrowUpDown } from "lucide-react";
+
+type SortOption = "price-asc" | "price-desc" | "duration";
 
 type FlightResultsProps = {
   status: "idle" | "success" | "error";
@@ -16,9 +18,10 @@ type FlightResultsProps = {
 
 export default function FlightResults({ status, flights, isLoading, error }: FlightResultsProps) {
   const { filters } = useFlightStore();
+  const [sortBy, setSortBy] = useState<SortOption>("price-asc");
 
   const filteredFlights = useMemo(() => {
-    return flights.filter((flight) => {
+    const filtered = flights.filter((flight) => {
       const total = Number(flight.priceTotal);
       const withinPrice =
         Number.isNaN(total) ||
@@ -27,7 +30,16 @@ export default function FlightResults({ status, flights, isLoading, error }: Fli
       const withinStops = filters.stops.includes(stops);
       return withinPrice && withinStops;
     });
-  }, [flights, filters]);
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "price-asc") return Number(a.priceTotal) - Number(b.priceTotal);
+      if (sortBy === "price-desc") return Number(b.priceTotal) - Number(a.priceTotal);
+      // duration — compare first itinerary duration strings (PT2H15M)
+      const durA = a.itineraries?.[0]?.duration ?? "";
+      const durB = b.itineraries?.[0]?.duration ?? "";
+      return durA.localeCompare(durB);
+    });
+  }, [flights, filters, sortBy]);
 
   if (isLoading) {
     return <FlightSkeleton count={3} />;
@@ -70,9 +82,23 @@ export default function FlightResults({ status, flights, isLoading, error }: Fli
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-text-muted">
-        {filteredFlights.length} flight{filteredFlights.length !== 1 ? "s" : ""} found
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-text-muted">
+          {filteredFlights.length} flight{filteredFlights.length !== 1 ? "s" : ""} found
+        </p>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown size={14} className="text-text-muted" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-text-secondary"
+          >
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="duration">Duration: Shortest</option>
+          </select>
+        </div>
+      </div>
       {filteredFlights.map((flight, i) => (
         <FlightCard key={flight.id} flight={flight} index={i} />
       ))}

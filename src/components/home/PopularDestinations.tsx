@@ -26,7 +26,7 @@ export default function PopularDestinations() {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
         {destinations.map((dest, i) => (
-          <GlassCard key={dest.name} hover>
+          <GlassCard key={dest.name} hover className="animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
             <div className="group cursor-pointer p-1">
               {/* Gradient placeholder image */}
               <div

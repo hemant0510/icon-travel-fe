@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plane, Hotel, Car, Mail, Phone, MapPin } from "lucide-react";
+import { Plane, Hotel, Car, Mail, Phone, MapPin, Globe, Send } from "lucide-react";
 
 const columns = [
   {
@@ -83,8 +83,27 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-white/40">
-          &copy; {new Date().getFullYear()} Icon Fly. All rights reserved.
+        <div className="mt-10 border-t border-white/10 pt-6">
+          {/* Social links */}
+          <div className="mb-4 flex items-center justify-center gap-3">
+            {[
+              { label: "Website", icon: Globe, href: "#" },
+              { label: "Email", icon: Mail, href: "mailto:support@iconfly.com" },
+              { label: "Telegram", icon: Send, href: "#" },
+            ].map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                aria-label={social.label}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/50 transition-colors hover:bg-accent-500/20 hover:text-accent-400"
+              >
+                <social.icon size={16} />
+              </a>
+            ))}
+          </div>
+          <p className="text-center text-xs text-white/40">
+            &copy; {new Date().getFullYear()} Icon Fly. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

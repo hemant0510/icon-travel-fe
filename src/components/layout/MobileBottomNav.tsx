@@ -15,7 +15,7 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="glass fixed bottom-0 left-0 right-0 z-50 border-t border-white/20 md:hidden">
+    <nav className="glass fixed bottom-0 left-0 right-0 z-50 border-t border-white/20 pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto flex h-16 max-w-md items-center justify-around">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active =
@@ -26,11 +26,13 @@ export default function MobileBottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-                active ? "text-primary-600" : "text-text-muted"
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-1.5 text-xs transition-all ${
+                active
+                  ? "bg-primary-50 font-semibold text-primary-600"
+                  : "font-medium text-text-muted hover:text-text-secondary"
               }`}
             >
-              <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
               <span>{label}</span>
             </Link>
           );

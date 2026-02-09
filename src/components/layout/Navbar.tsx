@@ -54,14 +54,19 @@ export default function Navbar() {
           onClick={() => setMobileOpen((v) => !v)}
           className="rounded-lg p-2 text-text-secondary hover:bg-primary-50 md:hidden"
           aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="border-t border-white/20 px-4 pb-4 pt-2 md:hidden">
+      {/* Mobile menu — animated slide */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
+          mobileOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="border-t border-white/20 px-4 pb-4 pt-2">
           {navLinks.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
@@ -81,7 +86,7 @@ export default function Navbar() {
             );
           })}
         </div>
-      )}
+      </div>
     </nav>
   );
 }
