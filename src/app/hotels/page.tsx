@@ -1,10 +1,18 @@
+import { cookies, headers } from "next/headers";
 import { Hotel as HotelIcon } from "lucide-react";
 import HotelSearchForm from "@/components/hotels/HotelSearchForm";
 import HotelResults from "@/components/hotels/HotelResults";
 import HotelFilters from "@/components/hotels/HotelFilters";
 import { mockHotels } from "@/data/mockHotels";
+import { getCurrencyFromServer } from "@/lib/currency";
+import { fetchCurrencyRates } from "@/services/currencyService";
 
-export default function HotelsPage() {
+export default async function HotelsPage() {
+  const cookieStore = await cookies();
+  const headersList = await headers();
+  const currency = await getCurrencyFromServer(cookieStore, headersList);
+  const rates = await fetchCurrencyRates(currency);
+
   return (
     <div>
       {/* Gradient header */}
@@ -36,10 +44,11 @@ export default function HotelsPage() {
           </aside>
           <div className="flex flex-col gap-6">
             <HotelSearchForm />
-            <HotelResults hotels={mockHotels} />
+            <HotelResults hotels={mockHotels} initialCurrency={currency} rates={rates} />
           </div>
         </div>
       </div>
     </div>
   );
 }
+

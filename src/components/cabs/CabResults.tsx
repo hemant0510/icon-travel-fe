@@ -1,5 +1,9 @@
+"use client";
+
 import type { Vehicle } from "@/types/cab";
 import { Users, Briefcase, Car, Zap } from "lucide-react";
+import { formatCurrency, convertCurrencyAmount, type CurrencyRates, DEFAULT_CURRENCY } from "@/lib/currency";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 
 const typeLabels: Record<Vehicle["type"], string> = {
   sedan: "Sedan",
@@ -19,7 +23,16 @@ const typeColors: Record<Vehicle["type"], string> = {
   auto: "bg-rose-50 text-rose-600",
 };
 
-export default function CabResults({ vehicles }: { vehicles: Vehicle[] }) {
+type CabResultsProps = {
+  vehicles: Vehicle[];
+  initialCurrency?: string;
+  rates?: CurrencyRates | null;
+};
+
+export default function CabResults({ vehicles, initialCurrency, rates }: CabResultsProps) {
+  const { currency } = useCurrencyStore();
+  const displayCurrency = currency || initialCurrency || DEFAULT_CURRENCY;
+
   if (vehicles.length === 0) {
     return (
       <div className="glass-card flex flex-col items-center gap-3 p-8 text-center">
@@ -34,7 +47,18 @@ export default function CabResults({ vehicles }: { vehicles: Vehicle[] }) {
       <p className="text-sm text-text-secondary">
         {vehicles.length} vehicle{vehicles.length !== 1 ? "s" : ""} available
       </p>
-      {vehicles.map((vehicle, i) => (
+      {vehicles.map((vehicle, i) => {
+        const convertedPricePerKm = rates
+          ? convertCurrencyAmount(vehicle.pricePerKm, vehicle.currency, displayCurrency, rates)
+          : vehicle.pricePerKm;
+        
+        const convertedBasePrice = rates
+          ? convertCurrencyAmount(vehicle.basePrice, vehicle.currency, displayCurrency, rates)
+          : vehicle.basePrice;
+
+        const finalCurrency = rates ? displayCurrency : vehicle.currency;
+
+        return (
         <article
           key={vehicle.id}
           className="glass-card overflow-hidden transition-all duration-300 hover:glass-card-hover animate-fade-in"
@@ -83,18 +107,12 @@ export default function CabResults({ vehicles }: { vehicles: Vehicle[] }) {
 
               <div className="mt-4 flex items-end justify-between border-t border-border-light pt-3">
                 <div className="text-xs text-text-muted">
-                  {new Intl.NumberFormat("en-IN", {
-                    style: "currency",
-                    currency: vehicle.currency,
-                  }).format(vehicle.pricePerKm)}{" "}
+                  {formatCurrency(convertedPricePerKm, finalCurrency)}{" "}
                   / km
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-primary-700">
-                    {new Intl.NumberFormat("en-IN", {
-                      style: "currency",
-                      currency: vehicle.currency,
-                    }).format(vehicle.basePrice)}
+                    {formatCurrency(convertedBasePrice, finalCurrency)}
                   </p>
                   <p className="text-xs text-text-muted">base fare</p>
                 </div>
@@ -102,7 +120,7 @@ export default function CabResults({ vehicles }: { vehicles: Vehicle[] }) {
             </div>
           </div>
         </article>
-      ))}
+      )})}
     </div>
   );
 }

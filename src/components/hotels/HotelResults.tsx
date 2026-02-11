@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import type { Hotel } from "@/types/hotel";
 import { useHotelStore } from "@/store/useHotelStore";
 import { Star, MapPin, Wifi, Waves, Dumbbell, UtensilsCrossed } from "lucide-react";
+import { formatCurrency, convertCurrencyAmount, type CurrencyRates, DEFAULT_CURRENCY } from "@/lib/currency";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 
 const amenityIcons: Record<string, React.ReactNode> = {
   WiFi: <Wifi size={12} />,
@@ -12,14 +14,30 @@ const amenityIcons: Record<string, React.ReactNode> = {
   Restaurant: <UtensilsCrossed size={12} />,
 };
 
-export default function HotelResults({ hotels }: { hotels: Hotel[] }) {
+type HotelResultsProps = {
+  hotels: Hotel[];
+  initialCurrency?: string;
+  rates?: CurrencyRates | null;
+};
+
+export default function HotelResults({ hotels, initialCurrency, rates }: HotelResultsProps) {
   const { filters, destination } = useHotelStore();
+  const { currency } = useCurrencyStore();
+  
+  // Use store currency if available (client-side), fallback to initialCurrency (server-side preference), then default
+  const displayCurrency = currency || initialCurrency || DEFAULT_CURRENCY;
 
   const filteredHotels = useMemo(() => {
     return hotels.filter((hotel) => {
+      // Convert price for filtering if we have rates
+      const priceInUserCurrency = rates 
+        ? convertCurrencyAmount(hotel.pricePerNight, hotel.currency, displayCurrency, rates)
+        : hotel.pricePerNight;
+
       const withinPrice =
-        hotel.pricePerNight >= filters.priceRange[0] &&
-        hotel.pricePerNight <= filters.priceRange[1];
+        priceInUserCurrency >= filters.priceRange[0] &&
+        priceInUserCurrency <= filters.priceRange[1];
+
       const withinStars = filters.stars.includes(hotel.stars);
       const matchesDestination =
         !destination ||
@@ -30,7 +48,7 @@ export default function HotelResults({ hotels }: { hotels: Hotel[] }) {
         filters.amenities.every((a) => hotel.amenities.includes(a));
       return withinPrice && withinStars && matchesDestination && matchesAmenities;
     });
-  }, [hotels, filters, destination]);
+  }, [hotels, filters, destination, rates, displayCurrency]);
 
   if (filteredHotels.length === 0) {
     return (
@@ -48,7 +66,14 @@ export default function HotelResults({ hotels }: { hotels: Hotel[] }) {
       <p className="text-sm text-text-secondary">
         {filteredHotels.length} hotel{filteredHotels.length !== 1 ? "s" : ""} found
       </p>
-      {filteredHotels.map((hotel, i) => (
+      {filteredHotels.map((hotel, i) => {
+        const convertedPrice = rates
+          ? convertCurrencyAmount(hotel.pricePerNight, hotel.currency, displayCurrency, rates)
+          : hotel.pricePerNight;
+        
+        const finalCurrency = rates ? displayCurrency : hotel.currency;
+
+        return (
         <article
           key={hotel.id}
           className="glass-card overflow-hidden transition-all duration-300 hover:glass-card-hover animate-fade-in"
@@ -109,10 +134,7 @@ export default function HotelResults({ hotels }: { hotels: Hotel[] }) {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-primary-700">
-                    {new Intl.NumberFormat("en-IN", {
-                      style: "currency",
-                      currency: hotel.currency,
-                    }).format(hotel.pricePerNight)}
+                    {formatCurrency(convertedPrice, finalCurrency)}
                   </p>
                   <p className="text-xs text-text-muted">per night</p>
                 </div>
@@ -120,7 +142,7 @@ export default function HotelResults({ hotels }: { hotels: Hotel[] }) {
             </div>
           </div>
         </article>
-      ))}
+      )})}
     </div>
   );
 }

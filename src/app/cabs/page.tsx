@@ -1,9 +1,17 @@
+import { cookies, headers } from "next/headers";
 import { Car } from "lucide-react";
 import CabSearchForm from "@/components/cabs/CabSearchForm";
 import CabResults from "@/components/cabs/CabResults";
 import { mockVehicles } from "@/data/mockVehicles";
+import { getCurrencyFromServer } from "@/lib/currency";
+import { fetchCurrencyRates } from "@/services/currencyService";
 
-export default function CabsPage() {
+export default async function CabsPage() {
+  const cookieStore = await cookies();
+  const headersList = await headers();
+  const currency = await getCurrencyFromServer(cookieStore, headersList);
+  const rates = await fetchCurrencyRates(currency);
+
   return (
     <div>
       {/* Gradient header */}
@@ -29,9 +37,10 @@ export default function CabsPage() {
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6">
           <CabSearchForm />
-          <CabResults vehicles={mockVehicles} />
+          <CabResults vehicles={mockVehicles} initialCurrency={currency} rates={rates} />
         </div>
       </div>
     </div>
   );
 }
+

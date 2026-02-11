@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import FlightResults from "./FlightResults";
 import AirportInput from "./AirportInput";
 import type { FlightSearchParams, TripType } from "@/types/flight";
 import { searchFlightsAction, type FlightSearchState } from "@/app/actions/flightActions";
 import { defaultFilters, useFlightStore } from "@/store/useFlightStore";
 import { Search, Calendar, Users, ListOrdered, Coins } from "lucide-react";
+import { getSupportedCurrencies, setClientCurrencyCookies } from "@/lib/currency";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 
 type FlightSearchFormProps = {
   initialState: FlightSearchState;
@@ -14,21 +17,18 @@ type FlightSearchFormProps = {
   autoSearch?: boolean;
 };
 
-const CURRENCIES = [
-  { code: "INR", label: "INR (\u20B9)" },
-  { code: "EUR", label: "EUR (\u20AC)" },
-  { code: "GBP", label: "GBP (\u00A3)" },
-] as const;
-
 export default function FlightSearchForm({ initialState, initialParams, autoSearch }: FlightSearchFormProps) {
   const [state, formAction, isPending] = useActionState(searchFlightsAction, initialState);
+  const router = useRouter();
   const { addSearch, setFilters } = useFlightStore();
+  const { currency, setManualCurrency, applyAutoCurrency, hydrateFromCookie } = useCurrencyStore();
+  const [isCurrencyPending, startCurrencyTransition] = useTransition();
+  const currencyOptions = useMemo(() => getSupportedCurrencies(), []);
   const formRef = useRef<HTMLFormElement | null>(null);
   const autoSearchedRef = useRef(false);
   const [origin, setOrigin] = useState(initialParams.origin);
   const [destination, setDestination] = useState(initialParams.destination);
   const [tripType, setTripType] = useState<TripType>(initialParams.tripType ?? "one-way");
-  const [currencyCode, setCurrencyCode] = useState(initialParams.currencyCode ?? "INR");
 
   const canSubmit = useMemo(() => {
     return origin.trim().length === 3 && destination.trim().length === 3 && origin !== destination;
@@ -41,6 +41,14 @@ export default function FlightSearchForm({ initialState, initialParams, autoSear
       formRef.current.requestSubmit();
     }
   }, [autoSearch, canSubmit]);
+
+  useEffect(() => {
+    hydrateFromCookie();
+  }, [hydrateFromCookie]);
+
+  useEffect(() => {
+    applyAutoCurrency(initialParams.currencyCode ?? currency);
+  }, [initialParams.currencyCode, applyAutoCurrency, currency]);
 
   useEffect(() => {
     if (state.status === "success") {
@@ -65,7 +73,7 @@ export default function FlightSearchForm({ initialState, initialParams, autoSear
         <div className="flex flex-col gap-4">
           {/* Hidden fields for tripType and currencyCode */}
           <input type="hidden" name="tripType" value={tripType} />
-          <input type="hidden" name="currencyCode" value={currencyCode} />
+          <input type="hidden" name="currencyCode" value={currency} />
 
           {/* Trip Type Toggle */}
           <div className="flex items-center gap-1 rounded-xl bg-primary-50 p-1">
@@ -179,10 +187,18 @@ export default function FlightSearchForm({ initialState, initialParams, autoSear
               <select
                 id="currencySelect"
                 className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
-                value={currencyCode}
-                onChange={(e) => setCurrencyCode(e.target.value)}
+                value={currency}
+                onChange={(e) => {
+                  const nextCurrency = e.target.value;
+                  setManualCurrency(nextCurrency);
+                  startCurrencyTransition(() => {
+                    setClientCurrencyCookies(nextCurrency);
+                    router.refresh();
+                  });
+                }}
+                disabled={isCurrencyPending}
               >
-                {CURRENCIES.map((c) => (
+                {currencyOptions.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.label}
                   </option>

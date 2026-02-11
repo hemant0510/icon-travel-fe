@@ -1,21 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useHotelStore, defaultHotelFilters } from "@/store/useHotelStore";
 import { SlidersHorizontal, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
+import {
+  convertCurrencyAmount,
+  DEFAULT_CURRENCY,
+  getCurrencyRates,
+  type CurrencyRates,
+} from "@/lib/currency";
 
 const allAmenities = ["WiFi", "Pool", "Spa", "Gym", "Restaurant", "Bar", "Parking", "Beach Access"];
 
 export default function HotelFilters() {
   const { filters, setFilters } = useHotelStore();
+  const { currency, hydrateFromCookie } = useCurrencyStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [rates, setRates] = useState<CurrencyRates | null>(null);
+  const previousCurrencyRef = useRef(currency);
+
+  useEffect(() => {
+    hydrateFromCookie();
+  }, [hydrateFromCookie]);
+
+  useEffect(() => {
+    let active = true;
+    getCurrencyRates(DEFAULT_CURRENCY).then((nextRates) => {
+      if (!active || !nextRates) return;
+      setRates(nextRates);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!rates) {
+      previousCurrencyRef.current = currency;
+      return;
+    }
+    const previousCurrency = previousCurrencyRef.current;
+    if (previousCurrency === currency) return;
+    const [minPrice, maxPrice] = filters.priceRange;
+    const nextMin = convertCurrencyAmount(minPrice, previousCurrency, currency, rates);
+    const nextMax = convertCurrencyAmount(maxPrice, previousCurrency, currency, rates);
+    setFilters({
+      ...filters,
+      priceRange: [Math.round(nextMin), Math.round(nextMax)],
+    });
+    previousCurrencyRef.current = currency;
+  }, [currency, filters, rates, setFilters]);
 
   const filterContent = (
     <div className="flex flex-col gap-5">
       {/* Price Range */}
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-          Price per night (INR)
+          Price per night ({currency})
         </p>
         <div className="flex gap-3">
           <input

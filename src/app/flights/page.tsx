@@ -1,8 +1,10 @@
+import { cookies, headers } from "next/headers";
 import FlightFilters from "@/components/FlightFilters";
 import FlightSearchForm from "@/components/FlightSearchForm";
 import type { FlightSearchState } from "@/app/actions/flightActions";
 import type { FlightSearchParams, TripType } from "@/types/flight";
 import { Plane } from "lucide-react";
+import { getCurrencyFromServer, normalizeCurrencyCode } from "@/lib/currency";
 
 type FlightsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -10,6 +12,11 @@ type FlightsPageProps = {
 
 export default async function FlightsPage({ searchParams }: FlightsPageProps) {
   const query = await searchParams;
+  const cookieStore = await cookies();
+  const headersList = await headers();
+  const serverCurrency = await getCurrencyFromServer(cookieStore, headersList);
+  const queryCurrency = typeof query.currencyCode === "string" ? normalizeCurrencyCode(query.currencyCode) : undefined;
+  const resolvedCurrency = queryCurrency ?? serverCurrency;
 
   const today = new Date();
   const defaultDeparture = new Date(today);
@@ -23,7 +30,7 @@ export default async function FlightsPage({ searchParams }: FlightsPageProps) {
     adults: typeof query.adults === "string" ? Math.max(1, Number(query.adults) || 1) : 1,
     max: 25,
     tripType: (query.tripType === "round-trip" ? "round-trip" : "one-way") as TripType,
-    currencyCode: typeof query.currencyCode === "string" ? query.currencyCode : "INR",
+    currencyCode: resolvedCurrency,
   };
 
   // Auto-search if origin and destination are provided from home page

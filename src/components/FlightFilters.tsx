@@ -1,12 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useFlightStore } from "@/store/useFlightStore";
 import { SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
+import { getSupportedCurrencies, setClientCurrencyCookies } from "@/lib/currency";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 
 export default function FlightFilters() {
+  const router = useRouter();
   const { filters, preferences, setFilters, setPreferences } = useFlightStore();
+  const { currency, setManualCurrency, hydrateFromCookie } = useCurrencyStore();
+  const [isCurrencyPending, startCurrencyTransition] = useTransition();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const currencyOptions = useMemo(() => getSupportedCurrencies(), []);
+
+  useEffect(() => {
+    hydrateFromCookie();
+  }, [hydrateFromCookie]);
+
+  useEffect(() => {
+    if (preferences.currency !== currency) {
+      setPreferences({ ...preferences, currency });
+    }
+  }, [currency, preferences, setPreferences]);
 
   const filterContent = (
     <div className="flex flex-col gap-5">
@@ -85,14 +102,24 @@ export default function FlightFilters() {
         <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">Currency</p>
         <select
           className="glass-input px-3 py-2 text-sm text-text-primary focus:glass-input-focus"
-          value={preferences.currency}
+          value={currency}
           onChange={(event) =>
-            setPreferences({ ...preferences, currency: event.target.value })
+            (() => {
+              const nextCurrency = event.target.value;
+              setManualCurrency(nextCurrency);
+              startCurrencyTransition(() => {
+                setClientCurrencyCookies(nextCurrency);
+                router.refresh();
+              });
+            })()
           }
+          disabled={isCurrencyPending}
         >
-          <option value="INR">INR (\u20B9)</option>
-          <option value="EUR">EUR (\u20AC)</option>
-          <option value="GBP">GBP (\u00A3)</option>
+        {currencyOptions.map((item) => (
+            <option key={item.code} value={item.code}>
+              {item.label}
+            </option>
+          ))}
         </select>
       </div>
     </div>

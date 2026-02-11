@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 export type FlightFilters = {
   priceRange: [number, number];
@@ -35,7 +36,7 @@ export const defaultFilters: FlightFilters = {
 
 export const defaultPreferences: FlightPreferences = {
   cabinClass: "economy",
-  currency: "INR",
+  currency: DEFAULT_CURRENCY,
 };
 
 export const useFlightStore = create<FlightStoreState>()(

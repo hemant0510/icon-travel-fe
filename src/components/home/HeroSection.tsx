@@ -1,6 +1,10 @@
 import SearchTabs from "./SearchTabs";
 
-export default function HeroSection() {
+type HeroSectionProps = {
+  initialCurrency: string;
+};
+
+export default function HeroSection({ initialCurrency }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden gradient-hero px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8">
       {/* Decorative floating shapes */}
@@ -25,7 +29,7 @@ export default function HeroSection() {
 
         {/* Search tabs embedded in hero */}
         <div className="animate-slide-up delay-200">
-          <SearchTabs />
+          <SearchTabs initialCurrency={initialCurrency} />
         </div>
       </div>
     </section>

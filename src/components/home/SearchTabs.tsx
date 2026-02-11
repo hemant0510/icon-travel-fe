@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plane, Hotel, Car, ArrowRight, Calendar, Users, Search } from "lucide-react";
 import TabSwitcher from "@/components/ui/TabSwitcher";
 import GradientButton from "@/components/ui/GradientButton";
 import AirportInput from "@/components/AirportInput";
 import type { TripType } from "@/types/flight";
+import { getSupportedCurrencies, setClientCurrencyCookies } from "@/lib/currency";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 
 const tabs = [
   { key: "flights", label: "Flights", icon: <Plane size={16} /> },
@@ -14,13 +16,11 @@ const tabs = [
   { key: "cabs", label: "Cabs", icon: <Car size={16} /> },
 ];
 
-const CURRENCIES = [
-  { code: "INR", label: "INR (\u20B9)" },
-  { code: "EUR", label: "EUR (\u20AC)" },
-  { code: "GBP", label: "GBP (\u00A3)" },
-] as const;
+type SearchTabsProps = {
+  initialCurrency: string;
+};
 
-export default function SearchTabs() {
+export default function SearchTabs({ initialCurrency }: SearchTabsProps) {
   const [activeTab, setActiveTab] = useState("flights");
   const router = useRouter();
 
@@ -37,7 +37,7 @@ export default function SearchTabs() {
 
       {/* Search card */}
       <div className="glass-card p-6 sm:p-8">
-        {activeTab === "flights" && <FlightQuickSearch />}
+        {activeTab === "flights" && <FlightQuickSearch initialCurrency={initialCurrency} />}
         {activeTab === "hotels" && <HotelQuickSearch onSearch={handleSearch} />}
         {activeTab === "cabs" && <CabQuickSearch onSearch={handleSearch} />}
       </div>
@@ -45,15 +45,25 @@ export default function SearchTabs() {
   );
 }
 
-function FlightQuickSearch() {
+function FlightQuickSearch({ initialCurrency }: { initialCurrency: string }) {
   const router = useRouter();
+  const { currency, setManualCurrency, applyAutoCurrency, hydrateFromCookie } = useCurrencyStore();
+  const [isPending, startTransition] = useTransition();
+  const currencyOptions = useMemo(() => getSupportedCurrencies(), []);
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [tripType, setTripType] = useState<TripType>("one-way");
   const [departureDate, setDepartureDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [adults, setAdults] = useState(1);
-  const [currencyCode, setCurrencyCode] = useState("INR");
+
+  useEffect(() => {
+    hydrateFromCookie();
+  }, [hydrateFromCookie]);
+
+  useEffect(() => {
+    applyAutoCurrency(initialCurrency);
+  }, [initialCurrency, applyAutoCurrency]);
 
   const canSubmit = useMemo(() => {
     if (origin.length !== 3 || destination.length !== 3 || origin === destination) return false;
@@ -70,7 +80,7 @@ function FlightQuickSearch() {
       departureDate,
       adults: String(adults),
       tripType,
-      currencyCode,
+      currencyCode: currency,
     });
     if (tripType === "round-trip" && returnDate) {
       params.set("returnDate", returnDate);
@@ -173,10 +183,18 @@ function FlightQuickSearch() {
           <select
             id="home-currency"
             className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
-            value={currencyCode}
-            onChange={(e) => setCurrencyCode(e.target.value)}
+            value={currency}
+            onChange={(e) => {
+              const nextCurrency = e.target.value;
+              setManualCurrency(nextCurrency);
+              startTransition(() => {
+                setClientCurrencyCookies(nextCurrency);
+                router.refresh();
+              });
+            }}
+            disabled={isPending}
           >
-            {CURRENCIES.map((c) => (
+            {currencyOptions.map((c) => (
               <option key={c.code} value={c.code}>{c.label}</option>
             ))}
           </select>

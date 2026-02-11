@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { UnifiedFlight, FlightItinerary, FlightSegment } from "@/types/flight";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 import {
   Plane,
   ChevronDown,
@@ -34,6 +35,13 @@ function formatDate(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function formatMoneyValue(value: string | undefined, currency: string) {
+  if (!value) return "--";
+  const numberValue = Number(value);
+  if (Number.isNaN(numberValue)) return `${currency} ${value}`;
+  return formatCurrency(numberValue, currency);
 }
 
 /** Total stops across all segments in an itinerary */
@@ -232,13 +240,11 @@ export default function FlightCard({ flight, index }: FlightCardProps) {
   const [priceLoading, setPriceLoading] = useState(false);
 
   const isRoundTrip = flight.itineraries.length > 1;
+  const displayCurrency = flight.currency ?? DEFAULT_CURRENCY;
 
   const formattedPrice = Number.isNaN(Number(flight.priceTotal))
-    ? `${flight.currency ?? "INR"} ${flight.priceTotal}`
-    : new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: flight.currency ?? "INR",
-      }).format(Number(flight.priceTotal));
+    ? `${displayCurrency} ${flight.priceTotal}`
+    : formatCurrency(Number(flight.priceTotal), displayCurrency);
 
   const handleToggleDetails = async () => {
     const willOpen = !expanded;
@@ -281,6 +287,7 @@ export default function FlightCard({ flight, index }: FlightCardProps) {
     }> | undefined;
     return { price, travelers };
   })();
+  const priceCurrency = fareBreakdown?.price?.currency ?? displayCurrency;
 
   return (
     <article
@@ -363,23 +370,28 @@ export default function FlightCard({ flight, index }: FlightCardProps) {
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Base Fare</span>
                     <span className="font-medium text-text-primary">
-                      {fareBreakdown.price.currency} {fareBreakdown.price.base}
+                      {formatMoneyValue(fareBreakdown.price.base, priceCurrency)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Taxes & Fees</span>
                   <span className="font-medium text-text-primary">
-                    {fareBreakdown.price.currency}{" "}
                     {fareBreakdown.price.base && fareBreakdown.price.total
-                      ? (Number(fareBreakdown.price.total) - Number(fareBreakdown.price.base)).toFixed(2)
+                      ? formatMoneyValue(
+                          String(Number(fareBreakdown.price.total) - Number(fareBreakdown.price.base)),
+                          priceCurrency
+                        )
                       : "--"}
                   </span>
                 </div>
                 <div className="mt-1 flex justify-between border-t border-border-light pt-1">
                   <span className="font-semibold text-text-primary">Total</span>
                   <span className="font-bold text-primary-700">
-                    {fareBreakdown.price.currency} {fareBreakdown.price.grandTotal ?? fareBreakdown.price.total}
+                    {formatMoneyValue(
+                      fareBreakdown.price.grandTotal ?? fareBreakdown.price.total,
+                      priceCurrency
+                    )}
                   </span>
                 </div>
               </div>
