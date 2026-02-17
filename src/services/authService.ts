@@ -48,7 +48,8 @@ class AuthService {
             throw new Error('Missing Amadeus API credentials in environment variables');
         }
 
-        const url = `${baseUrl}/security/oauth2/token`;
+        const apiBase = baseUrl.replace(/\/v1\/?$/, '');
+        const url = `${apiBase}/v1/security/oauth2/token`;
         const body = new URLSearchParams();
         body.append('client_id', clientId);
         body.append('client_secret', clientSecret);
