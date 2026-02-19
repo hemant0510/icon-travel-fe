@@ -3,13 +3,15 @@ import LocationService from "@/services/locationService";
 
 export async function GET(request: NextRequest) {
   const keyword = request.nextUrl.searchParams.get("keyword");
+  const rawSubType = request.nextUrl.searchParams.get("subType");
+  const subType = rawSubType === "AIRPORT" || rawSubType === "CITY" ? rawSubType : undefined;
 
   if (!keyword || keyword.length < 3) {
     return NextResponse.json({ data: [] });
   }
 
   try {
-    const response = await LocationService.searchCity(keyword);
+    const response = await LocationService.searchCity(keyword, subType);
     return NextResponse.json(response);
   } catch (error) {
     const message =

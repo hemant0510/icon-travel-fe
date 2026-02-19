@@ -13,7 +13,7 @@ class LocationService {
         return LocationService.instance;
     }
 
-    public async searchCity(keyword: string): Promise<LocationSearchResponse> {
+    public async searchCity(keyword: string, subType: 'AIRPORT' | 'CITY' = 'AIRPORT'): Promise<LocationSearchResponse> {
         try {
             const token = await AuthService.getToken();
             const baseUrl = process.env.AMADEUS_BASE_URL;
@@ -22,9 +22,11 @@ class LocationService {
                 throw new Error('Missing Amadeus API base URL');
             }
 
+            const apiBase = baseUrl.replace(/\/v1\/?$/, '');
+
             // Construct URL with query parameters
-            const url = new URL(`${baseUrl}/reference-data/locations`);
-            url.searchParams.append('subType', 'AIRPORT');
+            const url = new URL(`${apiBase}/v1/reference-data/locations`);
+            url.searchParams.append('subType', subType);
             url.searchParams.append('keyword', keyword);
 
             const response = await fetch(url.toString(), {
