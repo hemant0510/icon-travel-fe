@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapPin, Loader2 } from "lucide-react";
+import { useLocationSearch } from "@/hooks/useLocationSearch";
 import type { LocationData } from "@/models/responses/LocationSearchResponse";
 
 type LocationInputProps = {
@@ -14,23 +15,21 @@ type LocationInputProps = {
   allowFreeText?: boolean;
 };
 
-export default function LocationInput({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
+export default function LocationInput({
+  label,
+  name,
+  value,
+  onChange,
   subType = "AIRPORT",
   placeholder = "Search location...",
   allowFreeText = false
 }: LocationInputProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [query, setQuery] = useState(value);
-  const [suggestions, setSuggestions] = useState<LocationData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState<LocationData | null>(null);
-  const [fetchError, setFetchError] = useState(false);
+
+  const { suggestions, isLoading, fetchError, search, clear } = useLocationSearch({ subType });
 
   useEffect(() => {
     if (value && value !== query && value !== selected?.iataCode) {
@@ -38,59 +37,25 @@ export default function LocationInput({
     }
   }, [value, query, selected]);
 
-  const fetchLocations = useCallback(async (keyword: string) => {
-    if (keyword.length < 3) {
-      setSuggestions([]);
-      setFetchError(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setFetchError(false);
-    try {
-      const res = await fetch(
-        `/api/locations/search?keyword=${encodeURIComponent(keyword)}&subType=${subType}`
-      );
-      if (!res.ok) {
-        setFetchError(true);
-        setSuggestions([]);
-        return;
-      }
-      const json = await res.json();
-      setSuggestions(json.data ?? []);
-    } catch {
-      setFetchError(true);
-      setSuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [subType]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
     setSelected(null);
     onChange(allowFreeText ? val : "");
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchLocations(val);
-    }, 300);
+    search(val);
   };
 
   const handleSelect = (location: LocationData) => {
     setSelected(location);
     setQuery(location.iataCode);
     onChange(location.iataCode);
-    setSuggestions([]);
+    clear();
     setIsFocused(false);
   };
 
   useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
+    return () => clear();
+  }, [clear]);
 
   const isOpen = isFocused && (suggestions.length > 0 || isLoading);
   const showEmpty =

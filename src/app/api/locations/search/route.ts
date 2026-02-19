@@ -16,6 +16,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Location search failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: { code: "SEARCH_FAILED", message } }, { status: 500 });
   }
 }

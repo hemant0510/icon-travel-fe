@@ -1,6 +1,11 @@
 {
   "permissions": {
     "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
       "WebSearch",
       "WebFetch",
       "Bash(source *)",
@@ -23,12 +28,15 @@
       "Bash(sort *)",
       "Bash(tree *)",
       "Bash(diff *)",
+      "Bash(rm *)",
       "Bash(node *)",
       "Bash(npm *)",
       "Bash(npx *)",
       "Bash(git status*)",
       "Bash(git diff*)",
-      "Bash(git log*)"
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }

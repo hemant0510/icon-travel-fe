@@ -1,39 +1,47 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Calendar, Users, DoorOpen, Search, Loader2 } from "lucide-react";
 import { defaultHotelFilters, useHotelStore } from "@/store/useHotelStore";
 import LocationInput from "@/components/ui/LocationInput";
+import type { Hotel } from "@/types/hotel";
 
-export default function HotelSearchForm() {
-  const {
-    destination: storeDestination,
-    filters,
-    setFilters,
-    setDestination: setStoreDestination,
-    setHotels,
-    setIsLoading,
-    setError,
-    error,
-    isLoading,
-    hasSearched,
-    setHasSearched
-  } = useHotelStore();
+export type HotelSearchFormProps = {
+  onSearch: (params: {
+    cityCode: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    rooms: number;
+    currency?: string;
+  }) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  hotels: Hotel[];
+  hasSearched: boolean;
+};
+
+export default function HotelSearchForm({ onSearch, loading, error, hotels, hasSearched }: HotelSearchFormProps) {
+  const storeDestination = useHotelStore(s => s.destination);
+  const filters = useHotelStore(s => s.filters);
+  const setFilters = useHotelStore(s => s.setFilters);
+  const setStoreDestination = useHotelStore(s => s.setDestination);
+
   const currency = "INR";
-  
+
   const [destination, setDestination] = useState(storeDestination);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(2);
   const [rooms, setRooms] = useState(1);
-  const controllerRef = useRef<AbortController | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const normalizedDestination = destination.trim().toUpperCase();
   const isDestinationValid = /^[A-Z]{3}$/.test(normalizedDestination);
   const hasDateError =
     Boolean(checkIn && checkOut) && new Date(checkOut) <= new Date(checkIn);
   const canSubmit =
-    isDestinationValid && Boolean(checkIn) && Boolean(checkOut) && !hasDateError && !isLoading;
+    isDestinationValid && Boolean(checkIn) && Boolean(checkOut) && !hasDateError && !loading;
   const destinationError =
     destination.length > 0 && !isDestinationValid
       ? "Enter a valid 3-letter city code (e.g., DEL)."
@@ -55,66 +63,37 @@ export default function HotelSearchForm() {
         : !checkIn || !checkOut
         ? "Select check-in and check-out dates."
         : "Check-out must be after check-in.";
-      setError(message);
+      setLocalError(message);
       return;
     }
+
+    setLocalError(null);
 
     if (!hasSearched) {
       setFilters(defaultHotelFilters);
     }
 
     setStoreDestination(normalizedDestination);
-    setIsLoading(true);
-    setError(null);
-    setHotels([]);
-    setHasSearched(true);
 
-    let controller: AbortController | null = null;
-    try {
-      if (controllerRef.current) {
-        controllerRef.current.abort();
-      }
-      controller = new AbortController();
-      controllerRef.current = controller;
-      const res = await fetch("/api/hotels/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          cityCode: normalizedDestination,
-          checkIn,
-          checkOut,
-          guests,
-          rooms,
-          currency,
-        }),
-      });
+    await onSearch({
+      cityCode: normalizedDestination,
+      checkIn,
+      checkOut,
+      guests,
+      rooms,
+      currency,
+    });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || "Search failed");
-      }
-      const nextHotels = data.hotels || [];
-      setHotels(nextHotels);
-      if (nextHotels.length > 0) {
-        const maxPrice = Math.max(...nextHotels.map((hotel: { pricePerNight: number }) => hotel.pricePerNight));
-        if (maxPrice > filters.priceRange[1]) {
-          setFilters({ ...filters, priceRange: [filters.priceRange[0], Math.ceil(maxPrice)] });
-        }
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        return;
-      }
-      const message = err instanceof Error ? err.message : "Failed to fetch hotels. Please try again.";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-      if (controllerRef.current === controller) {
-        controllerRef.current = null;
+    // Auto-adjust price filter if results exceed current range
+    if (hotels.length > 0) {
+      const maxPrice = Math.max(...hotels.map((hotel) => hotel.pricePerNight));
+      if (maxPrice > filters.priceRange[1]) {
+        setFilters({ ...filters, priceRange: [filters.priceRange[0], Math.ceil(maxPrice)] });
       }
     }
   };
+
+  const displayError = localError || error;
 
   return (
     <form
@@ -204,10 +183,10 @@ export default function HotelSearchForm() {
           disabled={!canSubmit}
           className="gradient-primary flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {isLoading ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
-          {isLoading ? "Searching..." : "Search Hotels"}
+          {loading ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />}
+          {loading ? "Searching..." : "Search Hotels"}
         </button>
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {displayError && <p className="text-xs text-red-500">{displayError}</p>}
       </div>
     </form>
   );

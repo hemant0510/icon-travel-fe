@@ -7,7 +7,8 @@ import { SlidersHorizontal, Star, ChevronDown, ChevronUp } from "lucide-react";
 const allAmenities = ["WiFi", "Pool", "Spa", "Gym", "Restaurant", "Bar", "Parking", "Beach Access"];
 
 export default function HotelFilters() {
-  const { filters, setFilters } = useHotelStore();
+  const filters = useHotelStore(s => s.filters);
+  const setFilters = useHotelStore(s => s.setFilters);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const filterContent = (

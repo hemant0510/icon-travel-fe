@@ -1,5 +1,5 @@
-import AuthService from '@/services/authService';
-import type { FlightOffersResponse } from '../models/responses/FlightSearchResponse';
+import amadeusClient from '@/lib/amadeus/httpClient';
+import type { FlightOffersResponse } from '@/models/responses/FlightSearchResponse';
 
 class FlightService {
   private static instance: FlightService;
@@ -23,91 +23,38 @@ class FlightService {
     currencyCode?: string;
   }): Promise<FlightOffersResponse> {
     try {
-      const token = await AuthService.getToken();
-      const baseUrl = process.env.AMADEUS_BASE_URL;
-
-      if (!baseUrl) {
-        throw new Error('Missing Amadeus API base URL');
-      }
-
-      // Use v2 Flight Offers Search GET API (returns pricing)
-      // Base URL is https://test.api.amadeus.com/v1 — strip /v1 and use /v2
-      const apiBase = baseUrl.replace(/\/v1\/?$/, '');
-      const url = new URL(`${apiBase}/v2/shopping/flight-offers`);
-      url.searchParams.append('originLocationCode', params.origin);
-      url.searchParams.append('destinationLocationCode', params.destination);
-      url.searchParams.append('departureDate', params.departureDate);
-      if (params.returnDate) {
-        url.searchParams.append('returnDate', params.returnDate);
-      }
-      url.searchParams.append('adults', String(params.adults));
-      if (params.max) {
-        url.searchParams.append('max', String(params.max));
-      }
-      if (params.currencyCode) {
-        url.searchParams.append('currencyCode', params.currencyCode);
-      }
-
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      return await amadeusClient.get<FlightOffersResponse>(
+        '/v2/shopping/flight-offers',
+        {
+          originLocationCode: params.origin,
+          destinationLocationCode: params.destination,
+          departureDate: params.departureDate,
+          returnDate: params.returnDate,
+          adults: params.adults,
+          max: params.max,
+          currencyCode: params.currencyCode,
         }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Flight search failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const data: FlightOffersResponse = await response.json();
-      return data;
-
+      );
     } catch (error) {
-      console.error('Error searching flights:', error);
+      console.error('FlightService:', error);
       throw error;
     }
   }
 
-  /**
-   * Get detailed pricing for a specific flight offer.
-   * Calls Amadeus v1/shopping/flight-offers/pricing (POST with X-HTTP-Method-Override: GET).
-   */
   public async getFlightPrice(flightOffer: Record<string, unknown>): Promise<Record<string, unknown>> {
     try {
-      const token = await AuthService.getToken();
-      const baseUrl = process.env.AMADEUS_BASE_URL;
-
-      if (!baseUrl) {
-        throw new Error('Missing Amadeus API base URL');
-      }
-
-      const apiBase = baseUrl.replace(/\/v1\/?$/, '');
-      const url = `${apiBase}/v1/shopping/flight-offers/pricing`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-HTTP-Method-Override': 'GET',
-        },
-        body: JSON.stringify({
+      return await amadeusClient.post<Record<string, unknown>>(
+        '/v1/shopping/flight-offers/pricing',
+        {
           data: {
             type: 'flight-offers-pricing',
             flightOffers: [flightOffer],
           },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Flight pricing failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      return await response.json();
+        },
+        { 'X-HTTP-Method-Override': 'GET' }
+      );
     } catch (error) {
-      console.error('Error getting flight price:', error);
+      console.error('FlightService:', error);
       throw error;
     }
   }

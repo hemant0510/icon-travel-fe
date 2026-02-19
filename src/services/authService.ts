@@ -76,7 +76,7 @@ class AuthService {
 
             return this.accessToken;
         } catch (error) {
-            console.error('Error fetching auth token:', error);
+            console.error('AuthService:', error);
             throw error;
         }
     }

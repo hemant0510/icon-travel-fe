@@ -1,5 +1,5 @@
-import type { FlightOffersResponse, FlightOfferData, OfferSegment } from '../models/responses/FlightSearchResponse';
-import type { UnifiedFlight, FlightSegment, FlightItinerary } from '../types/flight';
+import type { FlightOffersResponse, FlightOfferData, OfferSegment } from '@/models/responses/FlightSearchResponse';
+import type { UnifiedFlight, FlightSegment, FlightItinerary } from '@/types/flight';
 
 function mapSegments(segments: OfferSegment[]): FlightSegment[] {
     return segments.map((seg) => ({
@@ -18,7 +18,7 @@ function mapSegments(segments: OfferSegment[]): FlightSegment[] {
     }));
 }
 
-export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFlight[] {
+export function mapFlightOffersResponse(response: FlightOffersResponse): UnifiedFlight[] {
     if (!response?.data) return [];
 
     const carriers = response.dictionaries?.carriers ?? {};
@@ -39,7 +39,6 @@ export function mapOffersToUnified(response: FlightOffersResponse): UnifiedFligh
         const originLoc = locations[originCode];
         const destLoc = locations[destCode];
 
-        // Map all itineraries (outbound + return for round-trip)
         const itineraries: FlightItinerary[] = offer.itineraries.map((itin) => ({
             duration: itin.duration,
             segments: mapSegments(itin.segments),

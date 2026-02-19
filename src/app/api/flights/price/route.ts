@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
     if (!flightOffer) {
       return NextResponse.json(
-        { error: "flightOffer is required in request body." },
+        { error: { code: "VALIDATION_ERROR", message: "flightOffer is required in request body." } },
         { status: 400 }
       );
     }
@@ -17,6 +17,6 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Pricing failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: { code: "PRICING_FAILED", message } }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import FlightService from "@/services/flightService";
-import { mapOffersToUnified } from "@/lib/mappers";
+import { mapFlightOffersResponse } from "@/lib/mappers/flightMapper";
 import type { UnifiedFlight } from "@/types/flight";
 
 export type FlightSearchState = {
@@ -52,7 +52,7 @@ export async function searchFlightsAction(
       currencyCode,
     });
 
-    const flights = mapOffersToUnified(response);
+    const flights = mapFlightOffersResponse(response);
     return { status: "success", flights };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Search failed.";

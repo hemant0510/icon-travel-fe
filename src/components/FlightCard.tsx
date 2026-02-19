@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { UnifiedFlight, FlightItinerary, FlightSegment } from "@/types/flight";
+import { useFlightPrice } from "@/hooks/useFlightPrice";
 import {
   Plane,
   ChevronDown,
@@ -228,8 +229,7 @@ type FlightCardProps = {
 
 export default function FlightCard({ flight, index }: FlightCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [priceDetail, setPriceDetail] = useState<Record<string, unknown> | null>(null);
-  const [priceLoading, setPriceLoading] = useState(false);
+  const { priceDetail, isLoading: priceLoading, fetchPrice } = useFlightPrice();
 
   const isRoundTrip = flight.itineraries.length > 1;
 
@@ -244,24 +244,8 @@ export default function FlightCard({ flight, index }: FlightCardProps) {
     const willOpen = !expanded;
     setExpanded(willOpen);
 
-    // Fetch pricing details on first expand if raw offer exists
     if (willOpen && !priceDetail && flight.rawOffer) {
-      setPriceLoading(true);
-      try {
-        const res = await fetch("/api/flights/price", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ flightOffer: flight.rawOffer }),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          setPriceDetail(json.data ?? null);
-        }
-      } catch {
-        // silently fail — we still show segment info
-      } finally {
-        setPriceLoading(false);
-      }
+      await fetchPrice(flight.rawOffer as Record<string, unknown>);
     }
   };
 

@@ -32,23 +32,23 @@ const amenityIcons: Record<string, React.ReactNode> = {
   Restaurant: <UtensilsCrossed size={12} />,
 };
 
-type HotelResultsProps = {
+export type HotelResultsProps = {
   hotels: Hotel[];
+  loading: boolean;
+  error: string | null;
   initialCurrency?: string;
   rates?: CurrencyRates | null;
 };
 
-export default function HotelResults({ hotels, initialCurrency, rates }: HotelResultsProps) {
-  const { filters, destination, hotels: storeHotels, isLoading, error, hasSearched } = useHotelStore();
-  
-  const activeHotels = hasSearched ? storeHotels : hotels;
+export default function HotelResults({ hotels, loading, error, initialCurrency, rates }: HotelResultsProps) {
+  const filters = useHotelStore(s => s.filters);
+  const destination = useHotelStore(s => s.destination);
 
   const displayCurrency = initialCurrency || DEFAULT_CURRENCY;
 
   const filteredHotels = useMemo(() => {
-    return activeHotels.filter((hotel) => {
-      // Convert price for filtering if we have rates
-      const priceInUserCurrency = rates 
+    return hotels.filter((hotel) => {
+      const priceInUserCurrency = rates
         ? convertCurrencyAmount(hotel.pricePerNight, hotel.currency, displayCurrency, rates)
         : hotel.pricePerNight;
 
@@ -66,9 +66,9 @@ export default function HotelResults({ hotels, initialCurrency, rates }: HotelRe
         filters.amenities.every((a) => hotel.amenities.includes(a));
       return withinPrice && withinStars && matchesDestination && matchesAmenities;
     });
-  }, [activeHotels, filters, destination, rates, displayCurrency]);
+  }, [hotels, filters, destination, rates, displayCurrency]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex h-64 w-full flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-primary-600" size={40} />
@@ -106,7 +106,7 @@ export default function HotelResults({ hotels, initialCurrency, rates }: HotelRe
         const convertedPrice = rates
           ? convertCurrencyAmount(hotel.pricePerNight, hotel.currency, displayCurrency, rates)
           : hotel.pricePerNight;
-        
+
         const finalCurrency = rates ? displayCurrency : hotel.currency;
 
         return (
@@ -116,7 +116,6 @@ export default function HotelResults({ hotels, initialCurrency, rates }: HotelRe
           style={{ animationDelay: `${i * 60}ms` }}
         >
           <div className="flex flex-col sm:flex-row">
-            {/* Gradient placeholder image */}
             <div className="flex h-48 w-full items-center justify-center bg-gradient-to-br from-primary-400 to-accent-400 sm:h-auto sm:w-56 sm:min-h-[200px]">
               <MapPin className="text-white/50" size={40} />
             </div>
@@ -145,7 +144,6 @@ export default function HotelResults({ hotels, initialCurrency, rates }: HotelRe
                   {hotel.description}
                 </p>
 
-                {/* Amenities */}
                 <div className="flex flex-wrap gap-1.5">
                   {hotel.amenities.slice(0, 5).map((amenity) => (
                     <span

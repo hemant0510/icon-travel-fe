@@ -1,7 +1,5 @@
 import { Hotel as HotelIcon } from "lucide-react";
-import HotelSearchForm from "@/components/hotels/HotelSearchForm";
-import HotelResults from "@/components/hotels/HotelResults";
-import HotelFilters from "@/components/hotels/HotelFilters";
+import HotelPageContent from "@/components/hotels/HotelPageContent";
 import { mockHotels } from "@/data/mockHotels";
 
 export default function HotelsPage() {
@@ -28,17 +26,7 @@ export default function HotelsPage() {
 
       {/* Content */}
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside>
-            <div className="lg:sticky lg:top-20">
-              <HotelFilters />
-            </div>
-          </aside>
-          <div className="flex flex-col gap-6">
-            <HotelSearchForm />
-            <HotelResults hotels={mockHotels} />
-          </div>
-        </div>
+        <HotelPageContent fallbackHotels={mockHotels} />
       </div>
     </div>
   );

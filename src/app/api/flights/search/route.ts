@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import FlightService from "@/services/flightService";
-import { mapOffersToUnified } from "@/lib/mappers";
+import { mapFlightOffersResponse } from "@/lib/mappers/flightMapper";
 import type { FlightSearchParams } from "@/types/flight";
 
 export async function POST(request: Request) {
@@ -17,10 +17,10 @@ export async function POST(request: Request) {
       currencyCode: payload.currencyCode,
     });
 
-    const flights = mapOffersToUnified(response);
+    const flights = mapFlightOffersResponse(response);
     return NextResponse.json({ flights });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Search failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: { code: "SEARCH_FAILED", message } }, { status: 500 });
   }
 }
