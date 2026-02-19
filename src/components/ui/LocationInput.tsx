@@ -10,6 +10,7 @@ type LocationInputProps = {
   name: string;
   value: string;
   onChange: (value: string) => void;
+  onLocationSelect?: (location: LocationData) => void;
   subType?: "AIRPORT" | "CITY";
   placeholder?: string;
   allowFreeText?: boolean;
@@ -20,6 +21,7 @@ export default function LocationInput({
   name,
   value,
   onChange,
+  onLocationSelect,
   subType = "AIRPORT",
   placeholder = "Search location...",
   allowFreeText = false
@@ -49,6 +51,7 @@ export default function LocationInput({
     setSelected(location);
     setQuery(location.iataCode);
     onChange(location.iataCode);
+    onLocationSelect?.(location);
     clear();
     setIsFocused(false);
   };

@@ -1,20 +1,69 @@
 "use client";
 
-import { useState } from "react";
-import { MapPin, Calendar, Clock, Search } from "lucide-react";
+import { useState, useRef } from "react";
+import { Calendar, Clock, Search, Users, Loader2 } from "lucide-react";
+import LocationInput from "@/components/ui/LocationInput";
+import type { LocationData } from "@/models/responses/LocationSearchResponse";
+import type { TransferType } from "@/types/cab";
 
-const tripTypes = [
-  { key: "one-way", label: "One Way" },
-  { key: "round-trip", label: "Round Trip" },
-  { key: "hourly", label: "Hourly Rental" },
-] as const;
+const tripTypes: { key: TransferType; label: string }[] = [
+  { key: "PRIVATE", label: "One Way" },
+  { key: "SHARED", label: "Shared" },
+];
 
-export default function CabSearchForm() {
-  const [tripType, setTripType] = useState<string>("one-way");
+type CabSearchFormProps = {
+  onSearch: (params: {
+    startLocationCode: string;
+    endAddressLine: string;
+    endCityName: string;
+    endZipCode: string;
+    endCountryCode: string;
+    endName: string;
+    endGeoCode: string;
+    transferType: string;
+    startDateTime: string;
+    passengers: number;
+  }) => void;
+  loading?: boolean;
+  error?: string | null;
+};
+
+export default function CabSearchForm({ onSearch, loading, error }: CabSearchFormProps) {
+  const [transferType, setTransferType] = useState<TransferType>("PRIVATE");
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState("10:00");
+  const [passengers, setPassengers] = useState(1);
+
+  const dropoffLocationRef = useRef<LocationData | null>(null);
+
+  const handleDropoffLocationSelect = (location: LocationData) => {
+    dropoffLocationRef.current = location;
+  };
+
+  const handleSubmit = () => {
+    if (!pickup || !dropoffLocationRef.current || !date || !time) return;
+
+    const loc = dropoffLocationRef.current;
+    const startDateTime = `${date}T${time}:00`;
+    const endGeoCode = `${loc.geoCode.latitude},${loc.geoCode.longitude}`;
+
+    onSearch({
+      startLocationCode: pickup,
+      endAddressLine: loc.address.cityName || loc.name || "",
+      endCityName: loc.address.cityName || "",
+      endZipCode: "",
+      endCountryCode: loc.address.countryCode || "",
+      endName: loc.name || loc.address.cityName || "",
+      endGeoCode,
+      transferType,
+      startDateTime,
+      passengers,
+    });
+  };
+
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div className="glass-card p-5 sm:p-6">
@@ -25,9 +74,9 @@ export default function CabSearchForm() {
             <button
               key={t.key}
               type="button"
-              onClick={() => setTripType(t.key)}
+              onClick={() => setTransferType(t.key)}
               className={`flex-1 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-                tripType === t.key
+                transferType === t.key
                   ? "gradient-primary text-white shadow-sm"
                   : "text-text-secondary hover:bg-white/60"
               }`}
@@ -37,68 +86,94 @@ export default function CabSearchForm() {
           ))}
         </div>
 
+        {/* Pickup & Dropoff */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
-              <MapPin size={13} className="mr-1 inline-block" />
-              Pickup Location
-            </label>
-            <input
-              type="text"
-              placeholder="Enter pickup location"
-              className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
-              value={pickup}
-              onChange={(e) => setPickup(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
-              <MapPin size={13} className="mr-1 inline-block" />
-              Drop-off Location
-            </label>
-            <input
-              type="text"
-              placeholder="Enter drop-off location"
-              className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
-              value={dropoff}
-              onChange={(e) => setDropoff(e.target.value)}
-            />
-          </div>
+          <LocationInput
+            label="From (Airport)"
+            name="pickup"
+            value={pickup}
+            onChange={setPickup}
+            subType="AIRPORT"
+            placeholder="Search airport (e.g. CDG, JFK)"
+          />
+          <LocationInput
+            label="To (City / Hotel)"
+            name="dropoff"
+            value={dropoff}
+            onChange={setDropoff}
+            onLocationSelect={handleDropoffLocationSelect}
+            subType="CITY"
+            placeholder="Search destination city"
+          />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+        {/* Date, Time, Passengers */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-text-secondary" htmlFor="cab-date">
               <Calendar size={13} className="mr-1 inline-block" />
               Date
             </label>
             <input
+              id="cab-date"
               type="date"
+              min={today}
               className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-text-secondary" htmlFor="cab-time">
               <Clock size={13} className="mr-1 inline-block" />
               Time
             </label>
             <input
+              id="cab-time"
               type="time"
               className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
               value={time}
               onChange={(e) => setTime(e.target.value)}
             />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-text-secondary" htmlFor="cab-passengers">
+              <Users size={13} className="mr-1 inline-block" />
+              Passengers
+            </label>
+            <input
+              id="cab-passengers"
+              type="number"
+              min={1}
+              max={10}
+              className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+              value={passengers}
+              onChange={(e) => setPassengers(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+            />
+          </div>
         </div>
+
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
+        )}
 
         <button
           type="button"
-          className="gradient-accent flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md shadow-accent-500/20 transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98]"
+          onClick={handleSubmit}
+          disabled={loading || !pickup || !dropoffLocationRef.current || !date}
+          className="gradient-accent flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md shadow-accent-500/20 transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Search size={16} />
-          Search Cabs
+          {loading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Searching...
+            </>
+          ) : (
+            <>
+              <Search size={16} />
+              Search Transfers
+            </>
+          )}
         </button>
       </div>
     </div>

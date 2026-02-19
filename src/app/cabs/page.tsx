@@ -1,7 +1,5 @@
 import { Car } from "lucide-react";
-import CabSearchForm from "@/components/cabs/CabSearchForm";
-import CabResults from "@/components/cabs/CabResults";
-import { mockVehicles } from "@/data/mockVehicles";
+import CabPageContent from "@/components/cabs/CabPageContent";
 
 export default function CabsPage() {
   return (
@@ -26,11 +24,8 @@ export default function CabsPage() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-6">
-          <CabSearchForm />
-          <CabResults vehicles={mockVehicles} />
-        </div>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <CabPageContent />
       </div>
     </div>
   );
