@@ -39,6 +39,7 @@ export interface HotelOfferData {
     cityCode: string;
     latitude?: number;
     longitude?: number;
+    rating?: string;
   };
   available: boolean;
   offers: HotelOffer[];
@@ -88,5 +89,20 @@ export interface HotelOffer {
         base: string;
       }[];
     };
+  };
+  policies?: {
+    cancellations?: {
+      deadline?: string;
+      description?: {
+        text: string;
+      };
+      amount?: string;
+    }[];
+    guarantee?: {
+      description?: {
+        text: string;
+      };
+    };
+    paymentType?: string;
   };
 }

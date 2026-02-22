@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { Hotel } from "@/types/hotel";
 import { useHotelStore } from "@/store/useHotelStore";
 import { Star, MapPin, Wifi, Waves, Dumbbell, UtensilsCrossed, Loader2, AlertCircle } from "lucide-react";
@@ -38,11 +40,20 @@ export type HotelResultsProps = {
   error: string | null;
   initialCurrency?: string;
   rates?: CurrencyRates | null;
+  searchParams?: {
+    cityCode: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    rooms: number;
+    currency?: string;
+  };
 };
 
-export default function HotelResults({ hotels, loading, error, initialCurrency, rates }: HotelResultsProps) {
+export default function HotelResults({ hotels, loading, error, initialCurrency, rates, searchParams }: HotelResultsProps) {
   const filters = useHotelStore(s => s.filters);
   const destination = useHotelStore(s => s.destination);
+  const urlSearchParams = useSearchParams();
 
   const displayCurrency = initialCurrency || DEFAULT_CURRENCY;
 
@@ -108,75 +119,112 @@ export default function HotelResults({ hotels, loading, error, initialCurrency, 
           : hotel.pricePerNight;
 
         const finalCurrency = rates ? displayCurrency : hotel.currency;
+        
+        // Build query string for the detail page using passed searchParams if available, otherwise fallback to URL params
+        const queryParams = new URLSearchParams();
+        
+        if (searchParams) {
+            queryParams.set('checkIn', searchParams.checkIn);
+            queryParams.set('checkOut', searchParams.checkOut);
+            queryParams.set('guests', searchParams.guests.toString());
+            queryParams.set('rooms', searchParams.rooms.toString());
+            queryParams.set('currency', searchParams.currency || finalCurrency);
+        } else {
+             // Fallback to reading from URL if explicit params not passed
+             urlSearchParams.forEach((value, key) => {
+                 queryParams.set(key, value);
+             });
+        }
+
+        // Ensure currency is set
+        if (!queryParams.has('currency')) {
+            queryParams.set('currency', finalCurrency);
+        }
 
         return (
-        <article
-          key={hotel.id}
-          className="glass-card overflow-hidden transition-all duration-300 hover:glass-card-hover animate-fade-in"
-          style={{ animationDelay: `${i * 60}ms` }}
-        >
-          <div className="flex flex-col sm:flex-row">
-            <div className="flex h-48 w-full items-center justify-center bg-gradient-to-br from-primary-400 to-accent-400 sm:h-auto sm:w-56 sm:min-h-[200px]">
-              <MapPin className="text-white/50" size={40} />
-            </div>
+          <Link
+            key={hotel.id}
+            href={`/hotels/${hotel.id}?${queryParams.toString()}`}
+            className="block"
+          >
+            <article
+              className="glass-card overflow-hidden transition-all duration-300 hover:glass-card-hover animate-fade-in"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="flex flex-col sm:flex-row">
+                <div className="relative h-48 w-full overflow-hidden sm:h-auto sm:w-56 sm:min-h-[200px]">
+                  {hotel.image ? (
+                    <img
+                      src={hotel.image}
+                      alt={hotel.name}
+                      className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-400 to-accent-400">
+                      <MapPin className="text-white/50" size={40} />
+                    </div>
+                  )}
+                </div>
 
-            <div className="flex flex-1 flex-col justify-between p-5">
-              <div>
-                <div className="mb-1 flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-text-primary">
-                    {hotel.name}
-                  </h3>
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: hotel.stars }).map((_, j) => (
-                      <Star
-                        key={j}
-                        size={12}
-                        className="fill-accent-400 text-accent-400"
-                      />
-                    ))}
+                <div className="flex flex-1 flex-col justify-between p-5">
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-text-primary">
+                        {hotel.name}
+                      </h3>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: hotel.stars }).map((_, j) => (
+                          <Star
+                            key={j}
+                            size={12}
+                            className="fill-accent-400 text-accent-400"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mb-2 flex items-center gap-1 text-sm text-text-secondary">
+                      <MapPin size={13} />
+                      {hotel.city}, {hotel.country}
+                    </p>
+                    <p className="mb-3 text-sm leading-relaxed text-text-secondary">
+                      {hotel.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {hotel.amenities.slice(0, 5).map((amenity) => (
+                        <span
+                          key={amenity}
+                          className="flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-600"
+                        >
+                          {amenityIcons[amenity]}
+                          {amenity}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-end justify-between border-t border-border-light pt-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`rounded-lg px-2 py-1 text-xs font-bold text-white ${hotel.rating > 0 ? 'bg-primary-600' : 'bg-gray-400'}`}>
+                        {hotel.rating > 0 ? hotel.rating : "New"}
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        ({hotel.reviewCount.toLocaleString()} reviews)
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-primary-700">
+                        {formatCurrency(convertedPrice, finalCurrency)}
+                      </p>
+                      <p className="text-xs text-text-muted">per night</p>
+                    </div>
                   </div>
                 </div>
-                <p className="mb-2 flex items-center gap-1 text-sm text-text-secondary">
-                  <MapPin size={13} />
-                  {hotel.city}, {hotel.country}
-                </p>
-                <p className="mb-3 text-sm leading-relaxed text-text-secondary">
-                  {hotel.description}
-                </p>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {hotel.amenities.slice(0, 5).map((amenity) => (
-                    <span
-                      key={amenity}
-                      className="flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-600"
-                    >
-                      {amenityIcons[amenity]}
-                      {amenity}
-                    </span>
-                  ))}
-                </div>
               </div>
-
-              <div className="mt-4 flex items-end justify-between border-t border-border-light pt-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="rounded-lg bg-primary-600 px-2 py-1 text-xs font-bold text-white">
-                    {hotel.rating}
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    ({hotel.reviewCount.toLocaleString()} reviews)
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-primary-700">
-                    {formatCurrency(convertedPrice, finalCurrency)}
-                  </p>
-                  <p className="text-xs text-text-muted">per night</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </article>
-      )})}
+            </article>
+          </Link>
+        );
+      })}
     </div>
   );
 }

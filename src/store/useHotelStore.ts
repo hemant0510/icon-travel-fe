@@ -11,6 +11,7 @@ export const defaultHotelFilters: HotelFilters = {
 type HotelStoreState = {
   filters: HotelFilters;
   destination: string;
+
   setFilters: (filters: HotelFilters) => void;
   setDestination: (destination: string) => void;
 };
@@ -20,6 +21,7 @@ export const useHotelStore = create<HotelStoreState>()(
     (set) => ({
       filters: defaultHotelFilters,
       destination: "",
+
       setFilters: (filters) => set({ filters }),
       setDestination: (destination) => set({ destination }),
     }),

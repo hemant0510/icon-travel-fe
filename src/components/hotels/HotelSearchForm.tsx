@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Calendar, Users, DoorOpen, Search, Loader2 } from "lucide-react";
 import { defaultHotelFilters, useHotelStore } from "@/store/useHotelStore";
 import LocationInput from "@/components/ui/LocationInput";
@@ -19,9 +19,25 @@ export type HotelSearchFormProps = {
   error: string | null;
   hotels: Hotel[];
   hasSearched: boolean;
+  initialParams?: {
+    cityCode: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    rooms: number;
+  };
+  autoSearch?: boolean;
 };
 
-export default function HotelSearchForm({ onSearch, loading, error, hotels, hasSearched }: HotelSearchFormProps) {
+export default function HotelSearchForm({
+  onSearch,
+  loading,
+  error,
+  hotels,
+  hasSearched,
+  initialParams,
+  autoSearch
+}: HotelSearchFormProps) {
   const storeDestination = useHotelStore(s => s.destination);
   const filters = useHotelStore(s => s.filters);
   const setFilters = useHotelStore(s => s.setFilters);
@@ -29,12 +45,14 @@ export default function HotelSearchForm({ onSearch, loading, error, hotels, hasS
 
   const currency = "INR";
 
-  const [destination, setDestination] = useState(storeDestination);
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [guests, setGuests] = useState(2);
-  const [rooms, setRooms] = useState(1);
+  const [destination, setDestination] = useState(initialParams?.cityCode ?? storeDestination);
+  const [checkIn, setCheckIn] = useState(initialParams?.checkIn ?? "");
+  const [checkOut, setCheckOut] = useState(initialParams?.checkOut ?? "");
+  const [guests, setGuests] = useState(initialParams?.guests ?? 2);
+  const [rooms, setRooms] = useState(initialParams?.rooms ?? 1);
   const [localError, setLocalError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const autoSearchedRef = useRef(false);
 
   const normalizedDestination = destination.trim().toUpperCase();
   const isDestinationValid = /^[A-Z]{3}$/.test(normalizedDestination);
@@ -95,8 +113,16 @@ export default function HotelSearchForm({ onSearch, loading, error, hotels, hasS
 
   const displayError = localError || error;
 
+  useEffect(() => {
+    if (autoSearch && !autoSearchedRef.current && canSubmit && formRef.current) {
+      autoSearchedRef.current = true;
+      formRef.current.requestSubmit();
+    }
+  }, [autoSearch, canSubmit]);
+
   return (
     <form
+      ref={formRef}
       className="glass-card p-5 sm:p-6"
       onSubmit={(event) => {
         event.preventDefault();

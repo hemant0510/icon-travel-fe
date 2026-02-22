@@ -58,6 +58,32 @@ class HotelService {
       throw error;
     }
   }
+
+  public async getHotelOffer(params: {
+    hotelId: string;
+    checkIn: string;
+    checkOut: string;
+    adults: number;
+    rooms: number;
+    currency?: string;
+  }): Promise<HotelOffersResponse> {
+    try {
+      return await amadeusClient.get<HotelOffersResponse>(
+        '/v3/shopping/hotel-offers',
+        {
+          hotelIds: params.hotelId,
+          adults: params.adults,
+          checkInDate: params.checkIn,
+          checkOutDate: params.checkOut,
+          roomQuantity: params.rooms,
+          currency: params.currency,
+        }
+      );
+    } catch (error) {
+      console.error('HotelService:', error);
+      throw error;
+    }
+  }
 }
 
 export default HotelService.getInstance();

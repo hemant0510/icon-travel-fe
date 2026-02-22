@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Calendar, Clock, Search, Users, Loader2 } from "lucide-react";
 import LocationInput from "@/components/ui/LocationInput";
 import type { LocationData } from "@/models/responses/LocationSearchResponse";
@@ -36,16 +36,16 @@ export default function CabSearchForm({ onSearch, loading, error }: CabSearchFor
   const [time, setTime] = useState("10:00");
   const [passengers, setPassengers] = useState(1);
 
-  const dropoffLocationRef = useRef<LocationData | null>(null);
+  const [dropoffLocation, setDropoffLocation] = useState<LocationData | null>(null);
 
   const handleDropoffLocationSelect = (location: LocationData) => {
-    dropoffLocationRef.current = location;
+    setDropoffLocation(location);
   };
 
   const handleSubmit = () => {
-    if (!pickup || !dropoffLocationRef.current || !date || !time) return;
+    if (!pickup || !dropoffLocation || !date || !time) return;
 
-    const loc = dropoffLocationRef.current;
+    const loc = dropoffLocation;
     const startDateTime = `${date}T${time}:00`;
     const endGeoCode = `${loc.geoCode.latitude},${loc.geoCode.longitude}`;
 
@@ -160,7 +160,7 @@ export default function CabSearchForm({ onSearch, loading, error }: CabSearchFor
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={loading || !pickup || !dropoffLocationRef.current || !date}
+          disabled={loading || !pickup || !dropoffLocation || !date}
           className="gradient-accent flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md shadow-accent-500/20 transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (

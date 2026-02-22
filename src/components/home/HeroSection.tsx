@@ -2,7 +2,7 @@ import SearchTabs from "./SearchTabs";
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden gradient-hero px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8">
+    <section className="relative gradient-hero px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:px-8">
       {/* Decorative floating shapes */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/5 animate-float" />
