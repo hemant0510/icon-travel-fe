@@ -49,7 +49,13 @@ export async function GET(
       // 2. Enrich with full Google Places details
       if (hotel.name) {
         try {
-          const placeId = await GooglePlacesService.findPlaceId(hotel.name, hotel.latitude, hotel.longitude);
+          const placeId = await GooglePlacesService.findPlaceId(
+            hotel.name,
+            hotel.city,
+            hotel.country,
+            hotel.latitude,
+            hotel.longitude
+          );
           
           if (placeId) {
             // Fetch full details for the detail page

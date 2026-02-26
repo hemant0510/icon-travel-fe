@@ -2,53 +2,114 @@
 
 import { useState } from "react";
 import { useHotelStore, defaultHotelFilters } from "@/store/useHotelStore";
-import { SlidersHorizontal, Star, ChevronDown, ChevronUp } from "lucide-react";
-
-const allAmenities = ["WiFi", "Pool", "Spa", "Gym", "Restaurant", "Bar", "Parking", "Beach Access"];
+import { HOTEL_AMENITIES } from "@/constants/hotel";
+import DualRangeSlider from "@/components/ui/DualRangeSlider";
+import { SlidersHorizontal, Star, ChevronDown, ChevronUp, Check } from "lucide-react";
 
 export default function HotelFilters() {
   const filters = useHotelStore(s => s.filters);
   const setFilters = useHotelStore(s => s.setFilters);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const priceChanged =
+    filters.priceRange[0] !== defaultHotelFilters.priceRange[0] ||
+    filters.priceRange[1] !== defaultHotelFilters.priceRange[1];
+  const starsChanged =
+    filters.stars.length !== defaultHotelFilters.stars.length ||
+    defaultHotelFilters.stars.some((s) => !filters.stars.includes(s));
+  const amenitiesChanged = filters.amenities.length > 0;
+  const activeCount = [priceChanged, starsChanged, amenitiesChanged].filter(Boolean).length;
 
   const filterContent = (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
+      {/* Header - Only show if filters are applied */}
+      {activeCount > 0 && (
+        <div className="flex items-center justify-between border-b border-border-light pb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary-600">
+              {activeCount} Active Filters
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilters(defaultHotelFilters)}
+            className="text-xs font-medium text-text-secondary hover:text-primary-600 transition-colors"
+          >
+            Reset All
+          </button>
+        </div>
+      )}
+
       {/* Price Range */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-          Price per night (INR)
-        </p>
-        <div className="flex gap-3">
-          <input
-            className="glass-input w-full px-3 py-2 text-sm text-text-primary focus:glass-input-focus"
-            type="number"
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+            Price Range
+          </p>
+          <span className="text-xs font-medium text-text-muted">INR</span>
+        </div>
+        
+        <div className="px-1 py-2">
+          <DualRangeSlider
             min={0}
-            value={filters.priceRange[0]}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                priceRange: [Number(e.target.value), filters.priceRange[1]],
-              })
-            }
+            max={100000}
+            step={1000}
+            value={filters.priceRange}
+            onChange={(val) => setFilters({ ...filters, priceRange: val })}
           />
-          <input
-            className="glass-input w-full px-3 py-2 text-sm text-text-primary focus:glass-input-focus"
-            type="number"
-            min={0}
-            value={filters.priceRange[1]}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                priceRange: [filters.priceRange[0], Number(e.target.value)],
-              })
-            }
-          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-text-secondary">
+              Min Price
+            </label>
+            <div className="group relative rounded-xl border border-border-light bg-surface transition-all focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
+              <div className="flex items-center px-3 py-2">
+                <span className="text-sm font-medium text-text-muted">₹</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={filters.priceRange[1]}
+                  value={filters.priceRange[0]}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    const nextMin = Math.min(Math.max(val, 0), filters.priceRange[1]);
+                    setFilters({ ...filters, priceRange: [nextMin, filters.priceRange[1]] });
+                  }}
+                  className="w-full bg-transparent pl-1 text-sm font-semibold text-text-primary outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-text-secondary">
+              Max Price
+            </label>
+            <div className="group relative rounded-xl border border-border-light bg-surface transition-all focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
+              <div className="flex items-center px-3 py-2">
+                <span className="text-sm font-medium text-text-muted">₹</span>
+                <input
+                  type="number"
+                  min={filters.priceRange[0]}
+                  max={100000}
+                  value={filters.priceRange[1]}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    const nextMax = Math.min(Math.max(val, filters.priceRange[0]), 100000);
+                    setFilters({ ...filters, priceRange: [filters.priceRange[0], nextMax] });
+                  }}
+                  className="w-full bg-transparent pl-1 text-sm font-semibold text-text-primary outline-none"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Star Rating */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+      <div className="flex flex-col gap-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-text-secondary">
           Star Rating
         </p>
         <div className="flex flex-wrap gap-2">
@@ -64,13 +125,13 @@ export default function HotelFilters() {
                     : [...filters.stars, star];
                   setFilters({ ...filters, stars: next });
                 }}
-                className={`flex cursor-pointer items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex h-9 min-w-[3rem] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border text-sm font-semibold transition-all ${
                   selected
-                    ? "bg-primary-100 text-primary-700"
-                    : "bg-surface-dim text-text-secondary hover:bg-primary-50"
+                    ? "border-primary-600 bg-primary-50 text-primary-700 shadow-sm"
+                    : "border-border-light bg-surface text-text-secondary hover:border-primary-200 hover:bg-primary-50/50"
                 }`}
               >
-                {star} <Star size={12} className={selected ? "fill-accent-400 text-accent-400" : ""} />
+                {star} <Star size={14} className={selected ? "fill-primary-700" : "fill-transparent"} />
               </button>
             );
           })}
@@ -78,12 +139,12 @@ export default function HotelFilters() {
       </div>
 
       {/* Amenities */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+      <div className="flex flex-col gap-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-text-secondary">
           Amenities
         </p>
         <div className="flex flex-wrap gap-2">
-          {allAmenities.map((amenity) => {
+          {HOTEL_AMENITIES.map((amenity) => {
             const selected = filters.amenities.includes(amenity);
             return (
               <button
@@ -95,27 +156,19 @@ export default function HotelFilters() {
                     : [...filters.amenities, amenity];
                   setFilters({ ...filters, amenities: next });
                 }}
-                className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                   selected
-                    ? "bg-primary-100 text-primary-700"
-                    : "bg-surface-dim text-text-secondary hover:bg-primary-50"
+                    ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
+                    : "border-transparent bg-surface-dim text-text-secondary hover:bg-surface-highlight"
                 }`}
               >
+                {selected && <Check size={12} strokeWidth={3} />}
                 {amenity}
               </button>
             );
           })}
         </div>
       </div>
-
-      {/* Reset */}
-      <button
-        type="button"
-        onClick={() => setFilters(defaultHotelFilters)}
-        className="cursor-pointer text-xs font-medium text-primary-600 hover:text-primary-700"
-      >
-        Reset all filters
-      </button>
     </div>
   );
 

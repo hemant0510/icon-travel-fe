@@ -4,6 +4,7 @@ import { useHotelSearch } from "@/hooks/useHotelSearch";
 import HotelSearchForm from "@/components/hotels/HotelSearchForm";
 import HotelResults from "@/components/hotels/HotelResults";
 import HotelFilters from "@/components/hotels/HotelFilters";
+import SortControl from "@/components/hotels/SortControl";
 import type { Hotel } from "@/types/hotel";
 
 export type HotelPageContentProps = {
@@ -56,6 +57,7 @@ export default function HotelPageContent({ fallbackHotels, initialParams, autoSe
           initialParams={effectiveParams}
           autoSearch={autoSearch && !hasSearched}
         />
+        {!loading && !error && displayHotels.length > 0 && <SortControl />}
         <HotelResults
           hotels={displayHotels}
           loading={loading}

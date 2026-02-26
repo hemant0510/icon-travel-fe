@@ -55,3 +55,5 @@ export interface HotelFilters {
   stars: number[];
   amenities: string[];
 }
+
+export type SortOption = "RECOMMENDED" | "PRICE_LOW_HIGH" | "PRICE_HIGH_LOW" | "RATING_HIGH_LOW";

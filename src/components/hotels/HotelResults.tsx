@@ -52,13 +52,14 @@ export type HotelResultsProps = {
 
 export default function HotelResults({ hotels, loading, error, initialCurrency, rates, searchParams }: HotelResultsProps) {
   const filters = useHotelStore(s => s.filters);
+  const sortBy = useHotelStore(s => s.sortBy);
   const destination = useHotelStore(s => s.destination);
   const urlSearchParams = useSearchParams();
 
   const displayCurrency = initialCurrency || DEFAULT_CURRENCY;
 
   const filteredHotels = useMemo(() => {
-    return hotels.filter((hotel) => {
+    const result = hotels.filter((hotel) => {
       const priceInUserCurrency = rates
         ? convertCurrencyAmount(hotel.pricePerNight, hotel.currency, displayCurrency, rates)
         : hotel.pricePerNight;
@@ -77,7 +78,35 @@ export default function HotelResults({ hotels, loading, error, initialCurrency, 
         filters.amenities.every((a) => hotel.amenities.includes(a));
       return withinPrice && withinStars && matchesDestination && matchesAmenities;
     });
-  }, [hotels, filters, destination, rates, displayCurrency]);
+
+    switch (sortBy) {
+      case "PRICE_LOW_HIGH":
+        return result.sort((a, b) => {
+          const priceA = rates
+            ? convertCurrencyAmount(a.pricePerNight, a.currency, displayCurrency, rates)
+            : a.pricePerNight;
+          const priceB = rates
+            ? convertCurrencyAmount(b.pricePerNight, b.currency, displayCurrency, rates)
+            : b.pricePerNight;
+          return priceA - priceB;
+        });
+      case "PRICE_HIGH_LOW":
+        return result.sort((a, b) => {
+          const priceA = rates
+            ? convertCurrencyAmount(a.pricePerNight, a.currency, displayCurrency, rates)
+            : a.pricePerNight;
+          const priceB = rates
+            ? convertCurrencyAmount(b.pricePerNight, b.currency, displayCurrency, rates)
+            : b.pricePerNight;
+          return priceB - priceA;
+        });
+      case "RATING_HIGH_LOW":
+        return result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case "RECOMMENDED":
+      default:
+        return result;
+    }
+  }, [hotels, filters, destination, rates, displayCurrency, sortBy]);
 
   if (loading) {
     return (
