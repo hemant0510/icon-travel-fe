@@ -6,6 +6,7 @@ import { Plane, Hotel, Car, ArrowRight, Calendar, Users, Search } from "lucide-r
 import TabSwitcher from "@/components/ui/TabSwitcher";
 import GradientButton from "@/components/ui/GradientButton";
 import AirportInput from "@/components/AirportInput";
+import LocationInput from "@/components/ui/LocationInput";
 import type { TripType } from "@/types/flight";
 
 const tabs = [
@@ -36,9 +37,9 @@ export default function SearchTabs() {
       </div>
 
       {/* Search card */}
-      <div className="glass-card p-6 sm:p-8">
+      <div className="glass-card p-6 sm:p-8 overflow-visible">
         {activeTab === "flights" && <FlightQuickSearch />}
-        {activeTab === "hotels" && <HotelQuickSearch onSearch={handleSearch} />}
+        {activeTab === "hotels" && <HotelQuickSearch />}
         {activeTab === "cabs" && <CabQuickSearch onSearch={handleSearch} />}
       </div>
     </div>
@@ -122,7 +123,7 @@ function FlightQuickSearch() {
           <input
             id="home-departureDate"
             type="date"
-            className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
+            className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"  
             value={departureDate}
             onChange={(e) => setDepartureDate(e.target.value)}
             required
@@ -196,33 +197,123 @@ function FlightQuickSearch() {
   );
 }
 
-function HotelQuickSearch({ onSearch }: { onSearch: () => void }) {
+function HotelQuickSearch() {
+  const router = useRouter();
+  const [destination, setDestination] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [guests, setGuests] = useState(2);
+  const [rooms, setRooms] = useState(1);
+
+  const normalizedDestination = destination.trim().toUpperCase();
+  const isDestinationValid = /^[A-Z]{3}$/.test(normalizedDestination);
+  const hasDateError =
+    Boolean(checkIn && checkOut) && new Date(checkOut) <= new Date(checkIn);
+  const canSubmit =
+    isDestinationValid && Boolean(checkIn) && Boolean(checkOut) && !hasDateError;
+  const destinationError =
+    destination.length > 0 && !isDestinationValid
+      ? "Enter a valid 3-letter city code (e.g., DEL)."
+      : "";
+  const dateError = hasDateError ? "Check-out must be after check-in." : "";
+
+  const clampNumber = (value: string, min: number, max: number) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return min;
+    return Math.min(max, Math.max(min, parsed));
+  };
+
+  const handleSearch = () => {
+    if (!canSubmit) return;
+    const params = new URLSearchParams({
+      cityCode: normalizedDestination,
+      checkIn,
+      checkOut,
+      guests: String(guests),
+      rooms: String(rooms),
+    });
+    router.push(`/hotels?${params.toString()}`);
+  };
+
   return (
-    <div className="flex flex-col gap-4">
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleSearch();
+      }}
+    >
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-text-secondary">Destination</label>
-        <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-          Where are you going?
-        </div>
+        <LocationInput
+          label="Destination"
+          name="home-hotel-destination"
+          value={destination}
+          onChange={setDestination}
+          subType="CITY"
+          placeholder="Where are you going?"
+          allowFreeText
+        />
+        {destinationError && (
+          <p className="text-xs text-red-500">{destinationError}</p>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-text-secondary">Check-in</label>
-          <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-            Pick a date
-          </div>
+          <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+            Check-in
+          </label>
+          <input
+            type="date"
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            value={checkIn}
+            onChange={(e) => setCheckIn(e.target.value)}
+          />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-text-secondary">Check-out</label>
-          <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-            Pick a date
-          </div>
+          <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+            Check-out
+          </label>
+          <input
+            type="date"
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            value={checkOut}
+            onChange={(e) => setCheckOut(e.target.value)}
+          />
         </div>
       </div>
-      <GradientButton onClick={onSearch} fullWidth>
+      {dateError && <p className="text-xs text-red-500">{dateError}</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+            Guests
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={10}
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            value={guests}
+            onChange={(e) => setGuests(clampNumber(e.target.value, 1, 10))}
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+            Rooms
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={5}
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            value={rooms}
+            onChange={(e) => setRooms(clampNumber(e.target.value, 1, 5))}
+          />
+        </div>
+      </div>
+      <GradientButton type="submit" fullWidth disabled={!canSubmit}>
         Search Hotels <ArrowRight size={16} />
       </GradientButton>
-    </div>
+    </form>
   );
 }
 

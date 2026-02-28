@@ -1,7 +1,38 @@
 import type { HotelOfferData, HotelListItem } from '@/models/responses/HotelSearchResponse';
 import type { Hotel } from '@/types/hotel';
+import { HOTEL_AMENITIES } from '@/constants/hotel';
 
-export type HotelMetaMap = Map<string, { countryCode?: string; cityCode?: string; name?: string }>;
+export type HotelMetaMap = Map<string, { countryCode?: string; cityCode?: string; name?: string; latitude?: number; longitude?: number }>;
+
+const FALLBACK_IMAGES = [
+    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1560200353-ce0a76b1d438?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1560662105-57f8ad6ae2d1?auto=format&fit=crop&w=800&q=80",
+];
+
+function getFallbackImage(id: string): string {
+    const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % FALLBACK_IMAGES.length;
+    return FALLBACK_IMAGES[index];
+}
+
+function getAmenities(id: string): string[] {
+    // Generate deterministic amenities based on ID
+    const seed = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    // Pick 3-7 amenities
+    const count = (seed % 5) + 3;
+    // Simple deterministic shuffle
+    const shuffled = [...HOTEL_AMENITIES].sort((a, b) => {
+        const valA = a.charCodeAt(0) + (a.charCodeAt(a.length - 1) || 0);
+        const valB = b.charCodeAt(0) + (b.charCodeAt(b.length - 1) || 0);
+        return ((valA * seed) % 100) - ((valB * seed) % 100);
+    });
+    return shuffled.slice(0, count);
+}
 
 export function buildHotelMetaMap(hotelList: HotelListItem[]): HotelMetaMap {
     const meta: HotelMetaMap = new Map();
@@ -10,6 +41,8 @@ export function buildHotelMetaMap(hotelList: HotelListItem[]): HotelMetaMap {
             countryCode: hotel.address?.countryCode,
             cityCode: hotel.iataCode,
             name: hotel.name,
+            latitude: hotel.geoCode?.latitude,
+            longitude: hotel.geoCode?.longitude,
         });
     });
     return meta;
@@ -37,19 +70,35 @@ export function mapHotelOffersResponse(
                 : 1;
         const pricePerNight = nights > 0 ? totalPrice / nights : totalPrice;
 
+        const policies = bestOffer?.policies;
+        const cancellationPolicy = policies?.cancellations?.[0]?.description?.text || policies?.guarantee?.description?.text;
+
+        const roomTypes = Array.from(new Set(offer.offers.map(o => o.room.typeEstimated?.category || o.room.description?.text).filter(Boolean))) as string[];
+        
+        // Amadeus returns rating as string (1-5 stars)
+        // Default to 3 stars if missing so it shows up in filters
+        let stars = offer.hotel.rating ? parseInt(offer.hotel.rating) : 0;
+        if (stars === 0) stars = 3;
+
+        const amenities = getAmenities(offer.hotel.hotelId); // Amadeus offers endpoint doesn't return amenities, so we provide reasonable defaults
+
         return {
             id: offer.hotel.hotelId,
             name: meta?.name || offer.hotel.name,
             city: meta?.cityCode || offer.hotel.cityCode,
             country: meta?.countryCode || "Unknown",
-            stars: 3,
-            rating: 4.5,
-            reviewCount: 100,
+            stars,
+            rating: 0, // Will be overwritten by Google data if available
+            reviewCount: 0, // Will be overwritten by Google data if available
             pricePerNight,
             currency: bestOffer ? bestOffer.price.currency : 'USD',
-            amenities: ["WiFi", "Pool", "Gym", "Restaurant"],
+            amenities,
             description: bestOffer?.room?.description?.text || "Comfortable stay with modern amenities.",
-            image: undefined,
+            image: getFallbackImage(offer.hotel.hotelId), // Set a fallback image initially
+            latitude: meta?.latitude || offer.hotel.latitude,
+            longitude: meta?.longitude || offer.hotel.longitude,
+            cancellationPolicy,
+            roomTypes,
         };
     });
 }

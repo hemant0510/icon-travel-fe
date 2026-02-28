@@ -33,12 +33,6 @@ export default function LocationInput({
 
   const { suggestions, isLoading, fetchError, search, clear } = useLocationSearch({ subType });
 
-  useEffect(() => {
-    if (value && value !== query && value !== selected?.iataCode) {
-        setQuery(value);
-    }
-  }, [value, query, selected]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
@@ -60,9 +54,15 @@ export default function LocationInput({
     return () => clear();
   }, [clear]);
 
+  const activeQuery = value && value !== selected?.iataCode ? value : query;
   const isOpen = isFocused && (suggestions.length > 0 || isLoading);
   const showEmpty =
-    isFocused && query.length >= 3 && !isLoading && !fetchError && suggestions.length === 0 && !selected;
+    isFocused &&
+    activeQuery.length >= 3 &&
+    !isLoading &&
+    !fetchError &&
+    suggestions.length === 0 &&
+    !selected;
 
   return (
     <div
@@ -86,7 +86,7 @@ export default function LocationInput({
           type="text"
           className="glass-input w-full px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
           placeholder={placeholder}
-          value={query}
+          value={activeQuery}
           onChange={handleInputChange}
           onFocus={() => setIsFocused(true)}
           autoComplete="off"
@@ -101,11 +101,14 @@ export default function LocationInput({
       {isOpen && (
         <div className="absolute top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-white/10 bg-surface-paper/95 p-1 shadow-lg backdrop-blur-md">
           {suggestions.map((loc) => (
-            <button
+              <button
               key={loc.id}
               type="button"
               className="flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-primary-500/10"
-              onClick={() => handleSelect(loc)}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleSelect(loc);
+                }}
             >
               <div className="flex w-full items-center justify-between">
                 <span className="font-medium text-text-primary">
