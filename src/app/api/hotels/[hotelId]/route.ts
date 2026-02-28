@@ -84,7 +84,7 @@ export async function GET(
                 fullAddress: mappedDetails.fullAddress,
                 shortAddress: mappedDetails.shortAddress,
                 reviews: mappedDetails.reviews,
-                bookingLink: mappedDetails.website || mappedDetails.url,
+                bookingLink: mappedDetails.website,
               });
             }
           }
