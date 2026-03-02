@@ -65,6 +65,8 @@ export default function CabSearchForm({ onSearch, loading, error }: CabSearchFor
 
   const today = new Date().toISOString().split("T")[0];
 
+  const canSubmit = !loading && pickup && dropoffLocation && date && time;
+
   return (
     <div className="glass-card p-5 sm:p-6">
       <div className="flex flex-col gap-4">
@@ -160,7 +162,7 @@ export default function CabSearchForm({ onSearch, loading, error }: CabSearchFor
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={loading || !pickup || !dropoffLocation || !date}
+          disabled={!canSubmit}
           className="gradient-accent flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-md shadow-accent-500/20 transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (

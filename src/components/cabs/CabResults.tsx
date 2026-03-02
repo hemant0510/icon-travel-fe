@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from "react";
 import type { Vehicle, VehicleCode } from "@/types/cab";
-import { Users, Briefcase, Car, Clock, MapPin, Shield, Building2, Truck, Zap, Crown } from "lucide-react";
+import { Users, Briefcase, Car, Clock, MapPin, Shield, Building2, Truck, Zap, Crown, ArrowRight } from "lucide-react";
 import { useCabStore, defaultCabFilters } from "@/store/useCabStore";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const categoryStyles: Record<string, { bg: string; text: string; dot: string }> = {
   ST: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
@@ -79,6 +81,15 @@ type CabResultsProps = {
 
 export default function CabResults({ vehicles, loading, hasSearched }: CabResultsProps) {
   const filters = useCabStore((s) => s.filters);
+  const searchParams = useSearchParams();
+
+  const handleViewDetails = useCallback((vehicle: Vehicle) => {
+    try {
+      sessionStorage.setItem(`cab_detail_${vehicle.id}`, JSON.stringify(vehicle));
+    } catch {
+      // sessionStorage may not be available in all environments
+    }
+  }, []);
 
   const filtered = vehicles.filter((v) => {
     if (filters.priceRange[0] !== defaultCabFilters.priceRange[0] || filters.priceRange[1] !== defaultCabFilters.priceRange[1]) {
@@ -215,17 +226,27 @@ export default function CabResults({ vehicles, loading, hasSearched }: CabResult
                   </div>
                 </div>
 
-                {/* Right: price */}
-                <div className="shrink-0 text-right">
-                  <p className="text-base font-bold text-primary-700">
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: vehicle.currency,
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: vehicle.price < 100 ? 2 : 0,
-                    }).format(vehicle.price)}
-                  </p>
-                  <p className="text-[10px] text-text-muted">total</p>
+                {/* Right: price + CTA */}
+                <div className="shrink-0 flex flex-col items-end gap-2">
+                  <div className="text-right">
+                    <p className="text-base font-bold text-primary-700">
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: vehicle.currency,
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: vehicle.price < 100 ? 2 : 0,
+                      }).format(vehicle.price)}
+                    </p>
+                    <p className="text-[10px] text-text-muted">total</p>
+                  </div>
+                  <Link
+                    href={`/cabs/${vehicle.id}?${searchParams.toString()}`}
+                    onClick={() => handleViewDetails(vehicle)}
+                    className="flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-primary-700 active:scale-[0.97]"
+                  >
+                    View Details
+                    <ArrowRight size={11} />
+                  </Link>
                 </div>
               </div>
             </div>

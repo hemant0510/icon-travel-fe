@@ -318,37 +318,70 @@ function HotelQuickSearch() {
 }
 
 function CabQuickSearch({ onSearch }: { onSearch: () => void }) {
+  const [pickup, setPickup] = useState("");
+  const [dropoff, setDropoff] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+
+  const canSubmit = pickup.trim() !== "" && dropoff.trim() !== "" && date !== "" && time !== "";
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-text-secondary">Pickup</label>
-          <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-            Enter pickup location
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-text-secondary" htmlFor="home-pickup">
+            Pickup
+          </label>
+          <input
+            id="home-pickup"
+            type="text"
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            placeholder="Enter pickup location"
+            value={pickup}
+            onChange={(e) => setPickup(e.target.value)}
+          />
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-text-secondary">Drop-off</label>
-          <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-            Enter drop-off location
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-text-secondary" htmlFor="home-dropoff">
+            Drop-off
+          </label>
+          <input
+            id="home-dropoff"
+            type="text"
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            placeholder="Enter drop-off location"
+            value={dropoff}
+            onChange={(e) => setDropoff(e.target.value)}
+          />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-text-secondary">Date</label>
-          <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-            Pick a date
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-text-secondary" htmlFor="home-cab-date">
+            Date
+          </label>
+          <input
+            id="home-cab-date"
+            type="date"
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-text-secondary">Time</label>
-          <div className="glass-input px-4 py-3 text-sm text-text-secondary">
-            Pick a time
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-text-secondary" htmlFor="home-cab-time">
+            Time
+          </label>
+          <input
+            id="home-cab-time"
+            type="time"
+            className="glass-input w-full px-4 py-3 text-sm text-text-primary focus:glass-input-focus"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+          />
         </div>
       </div>
-      <GradientButton onClick={onSearch} fullWidth variant="accent">
+      <GradientButton onClick={onSearch} fullWidth variant="accent" disabled={!canSubmit}>
         Search Cabs <ArrowRight size={16} />
       </GradientButton>
     </div>

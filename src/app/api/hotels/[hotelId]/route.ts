@@ -109,9 +109,55 @@ export async function GET(
 
   } catch (error) {
     console.error("Hotel detail API error:", error);
+    
+    // Proper error categorization
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+      
+      // Authentication errors
+      if (message.includes('unauthorized') || message.includes('invalid credentials') || message.includes('401')) {
+        return NextResponse.json(
+          { error: { code: 'AUTH_ERROR', message: 'Authentication failed' } },
+          { status: 401 }
+        );
+      }
+      
+      // Validation errors
+      if (message.includes('400') || message.includes('invalid_format') || message.includes('validation')) {
+        return NextResponse.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'Invalid hotel search parameters' } },
+          { status: 400 }
+        );
+      }
+      
+      // Hotel not found
+      if (message.includes('404') || message.includes('not found')) {
+        return NextResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Hotel not found' } },
+          { status: 404 }
+        );
+      }
+      
+      // Rate limiting
+      if (message.includes('429') || message.includes('rate limit')) {
+        return NextResponse.json(
+          { error: { code: 'RATE_LIMIT', message: 'Too many requests. Please try again later.' } },
+          { status: 429 }
+        );
+      }
+      
+      // Upstream server errors
+      if (message.includes('500') || message.includes('502') || message.includes('503')) {
+        return NextResponse.json(
+          { error: { code: 'UPSTREAM_ERROR', message: 'Hotel service temporarily unavailable' } },
+          { status: 503 }
+        );
+      }
+    }
+    
     const message = error instanceof Error ? error.message : "Failed to fetch hotel details";
     return NextResponse.json(
-      { error: { code: "FETCH_FAILED", message } },
+      { error: { code: "INTERNAL_ERROR", message } },
       { status: 500 }
     );
   }

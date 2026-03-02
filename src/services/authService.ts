@@ -5,6 +5,9 @@ class AuthService {
     private accessToken: string | null = null;
     private tokenExpiration: number = 0;
     private tokenPromise: Promise<string> | null = null;
+    private fetchMutex: Promise<void> | null = null;
+    private retryCount: number = 0;
+    private readonly MAX_RETRIES = 3;
 
     private constructor() { }
 
@@ -16,6 +19,11 @@ class AuthService {
     }
 
     public async getToken(): Promise<string> {
+        // Wait for any ongoing mutex lock
+        if (this.fetchMutex) {
+            await this.fetchMutex;
+        }
+
         // If token is valid, return it
         if (this.accessToken && !this.isTokenExpired()) {
             return this.accessToken;
@@ -26,12 +34,45 @@ class AuthService {
             return this.tokenPromise;
         }
 
-        // Otherwise, fetch a new token
-        this.tokenPromise = this.fetchToken().finally(() => {
-            this.tokenPromise = null;
+        // Create mutex lock
+        let releaseMutex: ((value: void | PromiseLike<void>) => void) | undefined;
+        this.fetchMutex = new Promise<void>((resolve) => {
+            releaseMutex = resolve;
         });
 
-        return this.tokenPromise;
+        try {
+            // Otherwise, fetch a new token with retry logic
+            this.tokenPromise = this.fetchTokenWithRetry().finally(() => {
+                this.tokenPromise = null;
+            });
+
+            const token = await this.tokenPromise;
+            return token;
+        } finally {
+            // Release mutex
+            if (releaseMutex) {
+                releaseMutex();
+            }
+            this.fetchMutex = null;
+        }
+    }
+
+    private async fetchTokenWithRetry(): Promise<string> {
+        for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
+            try {
+                const token = await this.fetchToken();
+                this.retryCount = 0; // Reset on success
+                return token;
+            } catch (error) {
+                if (attempt === this.MAX_RETRIES) {
+                    throw error;
+                }
+                // Exponential backoff: 1s, 2s, 4s
+                const delay = Math.pow(2, attempt) * 1000;
+                await new Promise<void>(resolve => setTimeout(resolve, delay));
+            }
+        }
+        throw new Error('Failed to fetch token after retries');
     }
 
     private isTokenExpired(): boolean {
@@ -45,7 +86,9 @@ class AuthService {
         const baseUrl = process.env.AMADEUS_BASE_URL;
 
         if (!clientId || !clientSecret || !baseUrl) {
-            throw new Error('Missing Amadeus API credentials in environment variables');
+            const error = new Error('Missing Amadeus API credentials in environment variables');
+            console.error('AuthService: Missing credentials');
+            throw error;
         }
 
         const apiBase = baseUrl.replace(/\/v1\/?$/, '');
@@ -65,7 +108,16 @@ class AuthService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch token: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                console.error(`AuthService: Token fetch failed [${response.status}]`, errorText);
+                
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Invalid Amadeus API credentials');
+                } else if (response.status >= 500) {
+                    throw new Error('Amadeus API server error');
+                }
+                
+                throw new Error(`Failed to fetch token: ${response.status}`);
             }
 
             const data: AuthResponse = await response.json();

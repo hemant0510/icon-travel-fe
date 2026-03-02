@@ -58,6 +58,24 @@ class FlightService {
       throw error;
     }
   }
+
+  public async getPricedOffer(rawOffer: Record<string, unknown>): Promise<Record<string, unknown>> {
+    try {
+      return await amadeusClient.post<Record<string, unknown>>(
+        '/v1/shopping/flight-offers/pricing',
+        {
+          data: {
+            type: 'flight-offers-pricing',
+            flightOffers: [rawOffer],
+          },
+        },
+        { 'X-HTTP-Method-Override': 'GET' }
+      );
+    } catch (error) {
+      console.error('FlightService:', error);
+      throw error;
+    }
+  }
 }
 
 export default FlightService.getInstance();
