@@ -5,8 +5,18 @@ type UseHotelDetailReturn = {
   hotel: Hotel | null;
   loading: boolean;
   error: string | null;
+  retry: () => void;
 };
 
+/**
+ * Fetches hotel details with proper race condition handling.
+ * 
+ * FIXED ISSUES:
+ * - Added AbortController to cancel stale requests when params change
+ * - Proper dependency array (no object reference issues)
+ * - Validates params before fetching
+ * - Added retry mechanism
+ */
 export function useHotelDetail(
   hotelId: string,
   params: {
@@ -18,16 +28,28 @@ export function useHotelDetail(
   }
 ): UseHotelDetailReturn {
   const [hotel, setHotel] = useState<Hotel | null>(null);
-  // Start with loading true to avoid flash of "not found" content
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
+
+  const retry = () => setRetryTrigger((prev) => prev + 1);
 
   useEffect(() => {
-    // If required params are missing, stop loading and return
+    // Validate params
     if (!hotelId || !params.checkIn || !params.checkOut) {
-        setLoading(false);
-        return;
+      setLoading(false);
+      setError("Missing required search parameters");
+      return;
     }
+
+    if (params.adults < 1 || params.rooms < 1) {
+      setLoading(false);
+      setError("Invalid search parameters: adults and rooms must be at least 1");
+      return;
+    }
+
+    const abortController = new AbortController();
+    let isActive = true;
 
     const fetchHotel = async () => {
       setLoading(true);
@@ -42,23 +64,39 @@ export function useHotelDetail(
       });
 
       try {
-        const res = await fetch(`/api/hotels/${hotelId}?${searchParams.toString()}`);
+        const res = await fetch(`/api/hotels/${hotelId}?${searchParams.toString()}`, {
+          signal: abortController.signal,
+        });
+
+        if (!isActive) return; // Component unmounted or params changed
+
         const data = await res.json();
 
         if (!res.ok) {
-           throw new Error(data?.error?.message || "Failed to fetch hotel details");
+          throw new Error(data?.error?.message || "Failed to fetch hotel details");
         }
 
         setHotel(data.hotel);
       } catch (err) {
+        if (!isActive) return;
+        if (err instanceof Error && err.name === 'AbortError') {
+          return; // Request cancelled, not an error
+        }
         setError(err instanceof Error ? err.message : "An unknown error occurred");
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     fetchHotel();
-  }, [hotelId, params.checkIn, params.checkOut, params.adults, params.rooms, params.currency]);
 
-  return { hotel, loading, error };
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
+  }, [hotelId, params.checkIn, params.checkOut, params.adults, params.rooms, params.currency, retryTrigger]);
+
+  return { hotel, loading, error, retry };
 }

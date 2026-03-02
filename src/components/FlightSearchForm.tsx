@@ -27,12 +27,16 @@ export default function FlightSearchForm({ initialState, initialParams, autoSear
   const autoSearchedRef = useRef(false);
   const [origin, setOrigin] = useState(initialParams.origin);
   const [destination, setDestination] = useState(initialParams.destination);
+  const [departureDate, setDepartureDate] = useState(initialParams.departureDate);
+  const [returnDate, setReturnDate] = useState(initialParams.returnDate ?? "");
   const [tripType, setTripType] = useState<TripType>(initialParams.tripType ?? "one-way");
   const [currencyCode, setCurrencyCode] = useState(initialParams.currencyCode ?? "INR");
 
   const canSubmit = useMemo(() => {
-    return origin.trim().length === 3 && destination.trim().length === 3 && origin !== destination;
-  }, [origin, destination]);
+    const basic = origin.trim().length === 3 && destination.trim().length === 3 && origin !== destination;
+    const dateOk = !!departureDate && (tripType === "one-way" || !!returnDate);
+    return basic && dateOk;
+  }, [origin, destination, departureDate, returnDate, tripType]);
 
   // Auto-submit when navigated from home page with search params
   useEffect(() => {
@@ -113,7 +117,8 @@ export default function FlightSearchForm({ initialState, initialParams, autoSear
                 name="departureDate"
                 type="date"
                 className="glass-input px-4 py-2.5 text-sm text-text-primary focus:glass-input-focus"
-                defaultValue={initialParams.departureDate}
+                value={departureDate}
+                onChange={(e) => setDepartureDate(e.target.value)}
                 required
               />
             </div>
@@ -131,7 +136,8 @@ export default function FlightSearchForm({ initialState, initialParams, autoSear
                     ? "cursor-not-allowed bg-zinc-50 text-text-muted opacity-60"
                     : "text-text-primary"
                 }`}
-                defaultValue={initialParams.returnDate ?? ""}
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
                 disabled={tripType === "one-way"}
                 required={tripType === "round-trip"}
               />

@@ -79,3 +79,64 @@ export interface BookingRequest {
     phone?: string;
   };
 }
+
+/** Enriched fare detail per traveler per segment — returned by the Pricing API */
+export interface FareDetailBySegment {
+  segmentId?: string;
+  cabin?: string;
+  fareBasis?: string;
+  brandedFare?: string;
+  class?: string;
+  includedCheckedBags?: {
+    quantity?: number;
+    weight?: number;
+    weightUnit?: string;
+  };
+}
+
+export interface TravelerPricing {
+  travelerId?: string;
+  travelerType?: string;
+  price?: {
+    currency?: string;
+    total?: string;
+    base?: string;
+    taxes?: Array<{ amount?: string; code?: string }>;
+  };
+  fareDetailsBySegment?: FareDetailBySegment[];
+}
+
+/** Full priced flight — returned by /v1/shopping/flight-offers/pricing */
+export interface PricedFlightOffer {
+  type?: string;
+  id?: string;
+  source?: string;
+  nonHomogeneous?: boolean;
+  lastTicketingDate?: string;
+  numberOfBookableSeats?: number;
+  itineraries: Array<{
+    duration?: string;
+    segments: FlightSegment[];
+  }>;
+  price?: {
+    currency?: string;
+    total?: string;
+    base?: string;
+    grandTotal?: string;
+    taxes?: Array<{ amount?: string; code?: string; nature?: string; included?: boolean }>;
+    fees?: Array<{ amount?: string; type?: string }>;
+  };
+  pricingOptions?: {
+    fareType?: string[];
+    includedCheckedBagsOnly?: boolean;
+  };
+  validatingAirlineCodes?: string[];
+  travelerPricings?: TravelerPricing[];
+}
+
+/** Enriched detail returned by /api/flights/[flightId] — used on the detail page */
+export interface FlightDetail {
+  flight: UnifiedFlight;
+  pricedOffer: PricedFlightOffer | null;
+  searchParams: FlightSearchParams;
+}

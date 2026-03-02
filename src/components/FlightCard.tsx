@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { UnifiedFlight, FlightItinerary, FlightSegment } from "@/types/flight";
 import { useFlightPrice } from "@/hooks/useFlightPrice";
 import {
@@ -9,7 +9,10 @@ import {
   ChevronUp,
   Clock,
   Loader2,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -172,16 +175,16 @@ function SegmentDetail({ segments }: { segments: FlightSegment[] }) {
             </div>
           )}
 
-          <div className="flex items-start gap-3">
+          <div className="flex items-stretch gap-3">
             {/* Timeline dot + line */}
-            <div className="flex flex-col items-center">
-              <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary-500" />
-              <span className="h-full w-px bg-primary-200" />
-              <span className="h-2.5 w-2.5 rounded-full border-2 border-primary-500 bg-white" />
+            <div className="flex flex-col items-center self-stretch">
+              <span className="mt-[6px] h-2.5 w-2.5 shrink-0 rounded-full bg-primary-500" />
+              <div className="w-px flex-1 bg-primary-200" />
+              <span className="mb-[6px] h-2.5 w-2.5 shrink-0 rounded-full border-2 border-primary-500 bg-white" />
             </div>
 
             {/* Details */}
-            <div className="flex flex-1 flex-col gap-1 pb-2 text-xs">
+            <div className="flex flex-1 flex-col gap-1 text-xs">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-text-primary">
                   {formatTime(seg.departure.at)}
@@ -230,8 +233,53 @@ type FlightCardProps = {
 export default function FlightCard({ flight, index }: FlightCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { priceDetail, isLoading: priceLoading, fetchPrice } = useFlightPrice();
+  const searchParams = useSearchParams();
 
   const isRoundTrip = flight.itineraries.length > 1;
+
+  /** 
+   * Persist the full flight object to sessionStorage so the detail page can hydrate it.
+   * 
+   * FIXED: Added proper validation and error handling for sessionStorage writes.
+   */
+  const handleViewDetails = useCallback(() => {
+    if (!flight || !flight.id) {
+      console.error('FlightCard: Cannot save invalid flight to sessionStorage');
+      return;
+    }
+
+    try {
+      // Validate that the object is serializable
+      const serialized = JSON.stringify(flight);
+      
+      // Check size (sessionStorage typically has 5-10MB limit)
+      if (serialized.length > 5 * 1024 * 1024) { // 5MB check
+        console.warn('FlightCard: Flight object too large for sessionStorage');
+        return;
+      }
+
+      sessionStorage.setItem(`flight_detail_${flight.id}`, serialized);
+    } catch (error) {
+      // Handle quota exceeded or serialization errors
+      if (error instanceof Error) {
+        if (error.name === 'QuotaExceededError') {
+          console.error('FlightCard: sessionStorage quota exceeded');
+          // Try to clear old flight details
+          try {
+            Object.keys(sessionStorage)
+              .filter(key => key.startsWith('flight_detail_') && key !== `flight_detail_${flight.id}`)
+              .forEach(key => sessionStorage.removeItem(key));
+            // Retry
+            sessionStorage.setItem(`flight_detail_${flight.id}`, JSON.stringify(flight));
+          } catch {
+            console.error('FlightCard: Unable to save flight details after cleanup');
+          }
+        } else {
+          console.error('FlightCard: Failed to serialize flight object', error);
+        }
+      }
+    }
+  }, [flight.id, flight]);
 
   const formattedPrice = Number.isNaN(Number(flight.priceTotal))
     ? `${flight.currency ?? "INR"} ${flight.priceTotal}`
@@ -302,16 +350,25 @@ export default function FlightCard({ flight, index }: FlightCardProps) {
         </div>
       </div>
 
-      {/* Flight Details toggle */}
-      <div className="border-t border-border-light">
+      {/* Actions row */}
+      <div className="border-t border-border-light flex flex-col sm:flex-row sm:items-stretch">
         <button
           type="button"
           onClick={handleToggleDetails}
-          className="flex w-full cursor-pointer items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-50"
+          className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-primary-600 transition-colors hover:bg-primary-50"
         >
           Flight Details
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
+        <span className="hidden w-px self-stretch bg-border-light sm:block" />
+        <Link
+          href={`/flights/${flight.id}?${searchParams.toString()}`}
+          onClick={handleViewDetails}
+          className="flex shrink-0 items-center justify-center gap-1.5 border-t border-border-light px-4 py-2.5 text-xs font-semibold text-accent-600 transition-colors hover:bg-accent-50 sm:w-40 sm:border-l sm:border-t-0"
+        >
+          View Details
+          <ArrowRight size={14} />
+        </Link>
       </div>
 
       {/* Expanded details */}
