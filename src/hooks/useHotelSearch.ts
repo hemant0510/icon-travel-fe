@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useHotelStore } from "@/store/useHotelStore";
 import type { Hotel } from "@/types/hotel";
 
 type UseHotelSearchReturn = {
@@ -26,41 +27,30 @@ type UseHotelSearchReturn = {
   }) => Promise<void>;
 };
 
+/**
+ * Hotel search hook with persistent results.
+ * 
+ * MIGRATED: From sessionStorage to Zustand persist for consistency with cabs.
+ * Results now survive navigation back from detail pages.
+ */
 export function useHotelSearch(): UseHotelSearchReturn {
-  const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastSearchParams, setLastSearchParams] = useState<UseHotelSearchReturn["lastSearchParams"]>(null);
-
   const controllerRef = useRef<AbortController | null>(null);
-  const cacheKeyRef = useRef("hotel-search-cache");
 
+  // Get persistent state from Zustand store
+  const {
+    searchResults,
+    hasSearched,
+    lastSearchParams,
+    setSearchResults,
+    setHasSearched,
+    setLastSearchParams,
+  } = useHotelStore();
+
+  // Hydrate store on mount (needed because of skipHydration)
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(cacheKeyRef.current);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        params?: UseHotelSearchReturn["lastSearchParams"];
-        hotels?: Hotel[];
-      };
-      if (parsed?.params && Array.isArray(parsed?.hotels)) {
-        setLastSearchParams(parsed.params);
-        setHotels(parsed.hotels);
-      }
-    } catch {
-      setLastSearchParams(null);
-    }
-  }, []);
-
-  const writeCache = useCallback((params: UseHotelSearchReturn["lastSearchParams"], items: Hotel[]) => {
-    try {
-      sessionStorage.setItem(
-        cacheKeyRef.current,
-        JSON.stringify({ params, hotels: items })
-      );
-    } catch {
-      return;
-    }
+    useHotelStore.persist.rehydrate();
   }, []);
 
   const search = useCallback(async (params: {
@@ -80,7 +70,8 @@ export function useHotelSearch(): UseHotelSearchReturn {
 
     setLoading(true);
     setError(null);
-    setHotels([]); // Clear previous results immediately
+    setSearchResults([]); // Clear previous results
+    setHasSearched(true);
     setLastSearchParams(params);
 
     try {
@@ -99,25 +90,23 @@ export function useHotelSearch(): UseHotelSearchReturn {
       }
 
       const nextHotels = data.hotels || [];
-      setHotels(nextHotels);
-      writeCache(params, nextHotels);
+      setSearchResults(nextHotels); // Store in Zustand
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Failed to fetch hotels. Please try again.");
     } finally {
-      // Only set loading false if this is still the active request
       if (controllerRef.current === controller) {
         setLoading(false);
         controllerRef.current = null;
       }
     }
-  }, [writeCache]);
+  }, [setSearchResults, setHasSearched, setLastSearchParams]);
 
   return { 
-    hotels, 
+    hotels: searchResults, 
     loading, 
     error, 
-    hasSearched: !!lastSearchParams, 
+    hasSearched, 
     lastSearchParams,
     search 
   };

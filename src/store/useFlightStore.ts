@@ -52,6 +52,9 @@ export const useFlightStore = create<FlightStoreState>()(
       setPreferences: (preferences) => set({ preferences }),
       clearHistory: () => set({ searchHistory: [] }),
     }),
-    { name: "flight-store" }
+    {
+      name: "flight-store",
+      skipHydration: true, // Prevent SSR hydration mismatch
+    }
   )
 );

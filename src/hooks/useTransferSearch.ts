@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useCabStore } from "@/store/useCabStore";
 import type { Vehicle } from "@/types/cab";
 
 type UseTransferSearchReturn = {
@@ -22,12 +23,30 @@ type UseTransferSearchReturn = {
   }) => Promise<void>;
 };
 
+/**
+ * Transfer search hook with persistent results.
+ * 
+ * FIXED: Results now persist in Zustand store, so navigating back from
+ * detail page shows cached results instead of triggering a page refresh.
+ */
 export function useTransferSearch(): UseTransferSearchReturn {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
+  
+  // Get persistent state from Zustand store
+  const { 
+    searchResults, 
+    hasSearched, 
+    setSearchResults, 
+    setHasSearched, 
+    setLastSearchParams 
+  } = useCabStore();
+  
+  // Hydrate store on mount (needed because of skipHydration)
+  useEffect(() => {
+    useCabStore.persist.rehydrate();
+  }, []);
 
   const search = useCallback(async (params: {
     startLocationCode: string;
@@ -50,8 +69,9 @@ export function useTransferSearch(): UseTransferSearchReturn {
 
     setLoading(true);
     setError(null);
-    setVehicles([]);
+    setSearchResults([]); // Clear previous results
     setHasSearched(true);
+    setLastSearchParams(params);
 
     try {
       const res = await fetch("/api/transfers/search", {
@@ -68,7 +88,7 @@ export function useTransferSearch(): UseTransferSearchReturn {
         throw new Error(message);
       }
 
-      setVehicles(data.vehicles || []);
+      setSearchResults(data.vehicles || []); // Store in Zustand
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Failed to fetch transfers. Please try again.");
@@ -78,7 +98,7 @@ export function useTransferSearch(): UseTransferSearchReturn {
         controllerRef.current = null;
       }
     }
-  }, []);
+  }, [setSearchResults, setHasSearched, setLastSearchParams]);
 
-  return { vehicles, loading, error, hasSearched, search };
+  return { vehicles: searchResults, loading, error, hasSearched, search };
 }
