@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import type { SessionUser } from "@/types/auth";
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? "fallback-dev-secret");
+if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET environment variable is not set");
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE_NAME = "if_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 

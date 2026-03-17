@@ -38,7 +38,8 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_wCO4UTB7Ylds@ep-lively-water-a9qduulf-pooler.gwc.azure.neon.tech/neondb?sslmode=require&channel_binding=require\" node -e \":*)"
     ]
   }
 }

@@ -27,8 +27,11 @@ export default function UserMenu() {
 
   async function handleLogout() {
     setOpen(false);
-    setUser(null);
-    await logoutAction();
+    try {
+      await logoutAction();
+    } finally {
+      setUser(null);
+    }
   }
 
   return (
