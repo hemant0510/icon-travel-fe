@@ -6,6 +6,7 @@ import type { UnifiedFlight, FlightSegment } from "@/types/flight";
 import { useFlightDetail } from "@/hooks/useFlightDetail";
 import { ChevronLeft, Loader2, Clock, Plane, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import BookingGate from "@/components/auth/BookingGate";
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -439,9 +440,9 @@ export default function FlightDetailContent({ flightId }: FlightDetailContentPro
               )}
 
               {/* CTA button */}
-              <button className="w-full rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white hover:bg-primary-700 transition-colors">
+              <BookingGate className="w-full rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white hover:bg-primary-700 transition-colors">
                 Continue to Booking
-              </button>
+              </BookingGate>
             </div>
           </div>
         </div>

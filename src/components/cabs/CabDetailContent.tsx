@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { VehicleCode } from "@/types/cab";
+import BookingGate from "@/components/auth/BookingGate";
 
 const vehicleCodeLabels: Record<string, string> = {
   SDN: "Sedan",
@@ -382,9 +383,9 @@ export default function CabDetailContent({ transferId }: CabDetailContentProps) 
               </div>
 
               {/* CTA button */}
-              <button className="w-full rounded-lg bg-primary-600 px-4 py-3 text-center font-semibold text-white transition-all hover:bg-primary-700 active:scale-[0.97]">
+              <BookingGate className="w-full rounded-lg bg-primary-600 px-4 py-3 text-center font-semibold text-white transition-all hover:bg-primary-700 active:scale-[0.97]">
                 Book Now
-              </button>
+              </BookingGate>
             </div>
           </div>
         </div>

@@ -1,16 +1,4 @@
 {
-  "mcpServers": {
-    "neon": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@neondatabase/mcp-server-neon"
-      ],
-      "env": {
-        "NEON_API_KEY": "napi_kbnuy7rv292mz9l952e40joxuw80kksz9io7fey8buj3gvrtzmdcg18kt5ae5sjf"
-      }
-    }
-  },
   "permissions": {
     "allow": [
       "Read",
@@ -48,7 +36,9 @@
       "Bash(git diff*)",
       "Bash(git log*)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }
